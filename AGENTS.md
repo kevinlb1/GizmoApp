@@ -52,6 +52,8 @@
 - `server/gizmoapp_server/db.py`: SQLite schema, seeding, and DB helpers
 - `scripts/install_machine_dependencies.sh`: one-time host bootstrap for system packages
 - `scripts/envfile.py`: shared helper for safely reading and writing shell-compatible `.env` files
+- `scripts/install_nginx_instance_router.sh`: one-time nginx bootstrap so future instance installs can update nginx automatically
+- `scripts/nginx_router_bootstrap.py`: helper that inserts the managed include into the correct nginx server block
 - `scripts/install_checkout.sh`: initialize the current checkout after machine dependencies exist
 - `scripts/install_deployment_instance.sh`: install one named deployment instance from a repo URL
 - `scripts/install_server.sh`: compatibility wrapper that runs machine bootstrap plus current-checkout install
@@ -84,6 +86,7 @@
 - The app may be hosted under a URL prefix such as `/AI100`, so routes and assets should support a configurable prefix.
 - Multiple independent derived apps may be deployed on the same host under different path prefixes such as `/todoapp` or `/scoreboard`.
 - Deployment scripts treat `.env` as shell-compatible configuration, not arbitrary shell code. Keep `.env` values compatible with `scripts/envfile.py`.
+- The intended low-friction production shape is: run the one-time nginx router bootstrap once, then let each future per-instance install register its own nginx snippet automatically.
 
 ## Operational Guidance
 - Treat deployment automation, cron configuration, and `gunicorn` reload behavior as important operational context and record notable changes here.
@@ -106,6 +109,7 @@
 - For derived apps, prefer `scripts/install_deployment_instance.sh` over hand-editing service files and cron entries.
 - Installers should leave `.env` at mode `600` so secrets do not become world-readable.
 - The generated nginx snippet for per-instance installs should handle both `/<name>` and `/<name>/`.
+- After the one-time `scripts/install_nginx_instance_router.sh` bootstrap, future app installs should not require manual nginx file edits.
 
 ## Deployment Checklist
 - The canonical starter checkout may live at `/home/kevinlb/bin/GizmoApp`, but derived app instances should usually live at `/home/kevinlb/bin/<name>`.

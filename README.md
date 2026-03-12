@@ -107,6 +107,35 @@ Run this once per deployment machine:
 
 This installs the required Ubuntu/Debian packages such as Python, `python3-venv`, Git, SQLite, curl, and cron.
 
+### One-time nginx bootstrap for single-command future deployments
+
+If you want future app installs to become one command with no manual nginx edits,
+run this once on the server:
+
+```bash
+./scripts/install_nginx_instance_router.sh \
+  --server-config /etc/nginx/sites-enabled/ai100 \
+  --server-name vickrey10.cs.ubc.ca
+```
+
+That creates a managed nginx include directory at `/etc/nginx/gizmoapp-instances`,
+patches the chosen site config to include `*.conf` files from that directory inside
+the matching `server` block, validates nginx, and reloads it.
+
+If your site file does not contain an explicit `server_name vickrey10.cs.ubc.ca`
+line but the file itself is clearly the right site config and contains only one
+`server { ... }` block, you can omit `--server-name` and point directly at that
+file:
+
+```bash
+./scripts/install_nginx_instance_router.sh \
+  --server-config /etc/nginx/sites-enabled/ai100
+```
+
+After that one-time bootstrap, future `install_deployment_instance.sh` runs will
+copy each app's generated snippet into `/etc/nginx/gizmoapp-instances/<name>.conf`
+and reload nginx automatically.
+
 ### Current-checkout install
 
 If the current checkout is itself the live deployment checkout, run:
@@ -149,26 +178,28 @@ This script:
 - writes a user-level systemd service at `~/.config/systemd/user/myapp.service`
 - installs a once-per-minute cron entry for `scripts/deploy_from_git.sh`
 - generates an nginx location snippet at `/home/kevinlb/bin/myapp/var/generated/nginx-location.conf`, including a redirect from `/myapp` to `/myapp/`
+- if the one-time nginx router bootstrap has been installed, copies the snippet into `/etc/nginx/gizmoapp-instances/myapp.conf` and reloads nginx automatically
 
 The default public URL becomes `http://vickrey10.cs.ubc.ca/myapp/`.
 
 ### After running `install_deployment_instance.sh`
 
 1. Review `/home/kevinlb/bin/myapp/.env`.
-2. Add the generated nginx snippet from `/home/kevinlb/bin/myapp/var/generated/nginx-location.conf` to the `vickrey10.cs.ubc.ca` nginx server block.
-3. Reload nginx:
+2. If you already ran `install_nginx_instance_router.sh`, nginx is updated automatically and you can skip to checking the service.
+3. If you did not run the one-time router bootstrap, add the generated nginx snippet from `/home/kevinlb/bin/myapp/var/generated/nginx-location.conf` to the `vickrey10.cs.ubc.ca` nginx server block.
+4. Reload nginx:
 
 ```bash
 sudo systemctl reload nginx
 ```
 
-4. Check the user service:
+5. Check the user service:
 
 ```bash
 systemctl --user status myapp.service
 ```
 
-5. Visit `http://vickrey10.cs.ubc.ca/myapp/`.
+6. Visit `http://vickrey10.cs.ubc.ca/myapp/`.
 
 If the app should stay running even when the deployment user is logged out, a privileged user may also need to run:
 

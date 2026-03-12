@@ -20,6 +20,9 @@ Options:
   --base-dir DIR         Parent directory for deployments (default: /home/kevinlb/bin)
   --domain DOMAIN        Public host name (default: vickrey10.cs.ubc.ca)
   --port PORT            Local gunicorn port; auto-selected if omitted
+  --nginx-managed-dir    nginx include directory used by the one-time router bootstrap
+                         (default: /etc/nginx/gizmoapp-instances)
+  --skip-nginx-register  Do not copy the generated snippet into the managed nginx dir
   --skip-cron            Do not install/update the user crontab entry
   --skip-service-start   Write the user service file but do not enable/start it
   -h, --help             Show this help
@@ -104,6 +107,33 @@ install_cron_entry() {
   rm -f "${tmp_crontab}"
 }
 
+register_nginx_instance() {
+  local source_snippet="$1"
+  local target_snippet="${NGINX_MANAGED_DIR}/${NAME}.conf"
+
+  if (( SKIP_NGINX_REGISTER != 0 )); then
+    echo "Automatic nginx registration skipped."
+    return 0
+  fi
+
+  if [[ ! -d "${NGINX_MANAGED_DIR}" ]]; then
+    echo "Managed nginx dir ${NGINX_MANAGED_DIR} does not exist; skipping automatic nginx registration."
+    echo "Run ./scripts/install_nginx_instance_router.sh once on the server to enable single-command app installs."
+    return 0
+  fi
+
+  if ! command -v sudo >/dev/null 2>&1 || ! command -v nginx >/dev/null 2>&1; then
+    echo "sudo and nginx are required for automatic nginx registration; skipping."
+    return 0
+  fi
+
+  sudo install -d -m 755 "${NGINX_MANAGED_DIR}"
+  sudo install -m 644 "${source_snippet}" "${target_snippet}"
+  sudo nginx -t
+  sudo systemctl reload nginx
+  echo "Registered nginx route in ${target_snippet} and reloaded nginx."
+}
+
 NAME=""
 REPO_URL=""
 BRANCH="main"
@@ -112,7 +142,9 @@ APP_TITLE=""
 BASE_DIR="/home/kevinlb/bin"
 DOMAIN="vickrey10.cs.ubc.ca"
 PORT=""
+NGINX_MANAGED_DIR="/etc/nginx/gizmoapp-instances"
 SKIP_CRON=0
+SKIP_NGINX_REGISTER=0
 SKIP_SERVICE_START=0
 
 while [[ $# -gt 0 ]]; do
@@ -148,6 +180,14 @@ while [[ $# -gt 0 ]]; do
     --port)
       PORT="$2"
       shift 2
+      ;;
+    --nginx-managed-dir)
+      NGINX_MANAGED_DIR="$2"
+      shift 2
+      ;;
+    --skip-nginx-register)
+      SKIP_NGINX_REGISTER=1
+      shift
       ;;
     --skip-cron)
       SKIP_CRON=1
@@ -290,6 +330,8 @@ location ${URL_PREFIX}/ {
 }
 EOF
 
+register_nginx_instance "${NGINX_SNIPPET}"
+
 if command -v systemctl >/dev/null 2>&1; then
   if systemctl --user daemon-reload; then
     if (( SKIP_SERVICE_START == 0 )); then
@@ -332,9 +374,17 @@ echo "  URL: http://${DOMAIN}${URL_PREFIX}/"
 echo "  Local gunicorn port: ${PORT}"
 echo "  User service file: ${SERVICE_FILE}"
 echo "  Generated nginx snippet: ${NGINX_SNIPPET}"
+if (( SKIP_NGINX_REGISTER == 0 )); then
+  echo "  Managed nginx dir: ${NGINX_MANAGED_DIR}"
+fi
 echo
 echo "Next steps:"
 echo "  1. Review ${APP_DIR}/.env"
-echo "  2. Add the nginx snippet to the ${DOMAIN} server config and reload nginx"
-echo "  3. Verify the service with: systemctl --user status ${SERVICE_NAME}"
-echo "  4. Visit http://${DOMAIN}${URL_PREFIX}/"
+if (( SKIP_NGINX_REGISTER == 0 )); then
+  echo "  2. Verify the service with: systemctl --user status ${SERVICE_NAME}"
+  echo "  3. Visit http://${DOMAIN}${URL_PREFIX}/"
+else
+  echo "  2. Add the nginx snippet to the ${DOMAIN} server config and reload nginx"
+  echo "  3. Verify the service with: systemctl --user status ${SERVICE_NAME}"
+  echo "  4. Visit http://${DOMAIN}${URL_PREFIX}/"
+fi
