@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_HELPER="${ROOT_DIR}/scripts/envfile.py"
+SYNC_DEPLOY_ENV="${ROOT_DIR}/scripts/sync_deploy_env.sh"
 cd "${ROOT_DIR}"
 
 if [[ -f "${ENV_HELPER}" && -f "${ROOT_DIR}/.env" ]]; then
@@ -48,6 +49,20 @@ fi
 
 git merge --ff-only "origin/${BRANCH}"
 CHANGED_FILES="$(git diff --name-only "${CURRENT_HEAD}" HEAD)"
+env_changed=0
+
+if [[ -x "${SYNC_DEPLOY_ENV}" ]]; then
+  if "${SYNC_DEPLOY_ENV}"; then
+    :
+  else
+    sync_status="$?"
+    if [[ "${sync_status}" -eq 10 ]]; then
+      env_changed=1
+    else
+      exit "${sync_status}"
+    fi
+  fi
+fi
 
 if grep -Eq '^server/requirements\.txt$' <<<"${CHANGED_FILES}"; then
   "${PIP_BIN}" install --upgrade pip wheel
@@ -69,12 +84,18 @@ while IFS= read -r path; do
   esac
 done <<<"${CHANGED_FILES}"
 
-if (( needs_reload == 0 )); then
+if (( needs_reload == 0 && env_changed == 0 )); then
   echo "Deployed static or documentation changes. gunicorn reload not required."
   exit 0
 fi
 
 if [[ -n "${GIZMOAPP_SYSTEMD_USER_SERVICE:-}" ]] && command -v systemctl >/dev/null 2>&1; then
+  if (( env_changed != 0 )); then
+    systemctl --user restart "${GIZMOAPP_SYSTEMD_USER_SERVICE}"
+    echo "Restarted ${GIZMOAPP_SYSTEMD_USER_SERVICE} after applying deploy/app.env."
+    exit 0
+  fi
+
   if systemctl --user reload "${GIZMOAPP_SYSTEMD_USER_SERVICE}"; then
     echo "Reloaded ${GIZMOAPP_SYSTEMD_USER_SERVICE}."
     exit 0

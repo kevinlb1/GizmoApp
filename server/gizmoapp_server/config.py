@@ -67,6 +67,7 @@ def normalize_url_prefix(value: str | None) -> str:
 
 def load_settings(shell_variant: str | None = None, repo_root: Path | None = None) -> dict:
     repo_root = repo_root or Path(__file__).resolve().parents[2]
+    load_local_env(repo_root / "deploy" / "app.env")
     load_local_env(repo_root / ".env")
     data_dir = repo_root / "var" / "data"
     log_dir = repo_root / "var" / "log"

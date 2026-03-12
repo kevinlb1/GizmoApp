@@ -18,6 +18,7 @@ The initial scaffold intentionally avoids Node and a frontend bundler. That keep
 - `server/` contains the Flask app, SQLite wiring, and HTML/CSS/JS assets
 - `scripts/` contains install, deploy, and asset-generation helpers
 - `deploy/` contains example `gunicorn`, `nginx`, and cron snippets
+- `deploy/app.env` contains git-tracked deployment settings that should reach the server through normal pushes
 - `deploy/non-scaffold-app-deployment.md` explains how existing non-GizmoApp apps should fit into the neutral nginx host layout
 - `tests/` contains API and routing smoke tests
 
@@ -32,7 +33,7 @@ This split is meant to support multiple independent apps derived from this start
 
 ## Local Development
 
-1. Copy `.env.example` to `.env` if you want to change local settings. For a local prefix test, set `GIZMOAPP_URL_PREFIX=/demo-app`.
+1. Copy `.env.example` to `.env` if you want to change local machine-specific settings. For a local prefix test, set `GIZMOAPP_URL_PREFIX=/demo-app`.
 2. Create the virtualenv and install dependencies:
 
 ```bash
@@ -58,7 +59,7 @@ make dev-graphical
 make dev-text
 ```
 
-The development commands now auto-read a repo-root `.env`. The default app URL is `http://127.0.0.1:8001/` unless you set `GIZMOAPP_URL_PREFIX`, in which case the app lives under that prefix.
+The development commands now auto-read `deploy/app.env` and then a repo-root `.env`. The default app URL is `http://127.0.0.1:8001/` unless you set `GIZMOAPP_URL_PREFIX`, in which case the app lives under that prefix.
 
 ## Shell Selection
 
@@ -68,7 +69,7 @@ The project keeps both blank shells in the same codebase and shares the same bac
 - `server/wsgi_text.py` serves the text-first shell
 - `server/wsgi.py` serves whichever shell is selected by `GIZMOAPP_SHELL`
 
-On the server, the simplest approach is to keep the gunicorn target at `server.wsgi:app` and set `GIZMOAPP_SHELL=graphical` or `GIZMOAPP_SHELL=text` in `.env`.
+On the server, the simplest approach is to keep the gunicorn target at `server.wsgi:app` and set the default shell in `deploy/app.env`. The deploy scripts merge that tracked setting into the live `.env` and restart the service when it changes.
 
 ## Using This As A Starter
 
@@ -82,6 +83,7 @@ For this repository, the intended use is as a starter/template. A derived app sh
 To support that use case, keep these traits intact:
 
 - configuration lives in `.env`
+- git-controlled deployment defaults live in `deploy/app.env`
 - deployment steps stay explicit in `README.md` and `deploy/`
 - the backend remains shared and understandable
 - shell-specific UI stays isolated so future projects can keep one shell or both
@@ -92,6 +94,13 @@ For template-derived apps, the intended workflow is:
 - commit it with a descriptive message
 - push it so the deployment cron job can pick it up, unless the user explicitly wants to keep the work local
 - if the task installs or generates local-only files that do not belong in the repo, add them to `.gitignore`
+
+For deployed template-derived apps, prefer this split:
+
+- `deploy/app.env` is git-tracked and should hold non-secret runtime choices you want to reach the server through normal `git push` plus cron deploys
+- `.env` on the server is machine-specific and should hold secrets, ports, DB paths, service names, and per-instance URL prefixes
+
+For example, changing from the text shell to the graphical shell should normally mean editing `deploy/app.env`, committing, and pushing, not SSHing into the server to edit `.env`.
 
 ## API Surface
 
@@ -263,7 +272,7 @@ If machine dependencies are already installed and you only want to initialize th
 ./scripts/install_checkout.sh
 ```
 
-That script also normalizes `.env` to owner-only permissions so secrets do not stay world-readable on shared machines.
+That script also normalizes `.env` to owner-only permissions so secrets do not stay world-readable on shared machines, and merges any git-tracked settings from `deploy/app.env` into the live `.env`.
 
 ### Install a fork/template-derived app at `/name`
 
@@ -283,6 +292,7 @@ This script:
 - checks out `origin/main`
 - writes `/home/kevinlb/bin/myapp/.env`
 - locks `/home/kevinlb/bin/myapp/.env` to owner-only permissions and safely quotes values such as app titles with spaces
+- merges git-tracked settings from `deploy/app.env` into the live `.env`
 - picks a free local gunicorn port unless you specify `--port`
 - creates the virtualenv and installs Python dependencies
 - initializes the SQLite database
@@ -306,7 +316,7 @@ That wrapper:
 - infers the app name from the repository name
 - checks the repo out under `/home/kevinlb/bin/<repo-name>`
 - serves it at `http://vickrey10.cs.ubc.ca/<repo-name>/`
-- defaults to the graphical shell
+- uses the shell declared in `deploy/app.env`, or falls back to graphical if that file does not set one
 - installs the per-minute git deploy cron job
 - registers the nginx route automatically if the one-time router bootstrap has been run
 
@@ -338,6 +348,7 @@ Optional overrides:
 ### After running `install_deployment_instance.sh`
 
 1. Review `/home/kevinlb/bin/myapp/.env`.
+   Treat it as machine-specific state, not the normal place for app-level settings that should come from git.
 2. If you already ran `install_nginx_instance_router.sh`, nginx is updated automatically and you can skip to checking the service.
 3. If you did not run the one-time router bootstrap, add the generated nginx snippet from `/home/kevinlb/bin/myapp/var/generated/nginx-location.conf` to the `vickrey10.cs.ubc.ca` nginx server block.
 4. Reload nginx:
@@ -370,9 +381,12 @@ The example cron entry in `deploy/user-crontab.example` calls `scripts/deploy_fr
 
 - Refuses to deploy if tracked files are dirty
 - Fast-forwards the live checkout from `origin/main`
+- Merges git-tracked deployment settings from `deploy/app.env` into the live `.env`
 - Reinstalls Python packages only when `server/requirements.txt` changes
 - Re-initializes the database idempotently
 - Reloads `gunicorn` when runtime files changed and a reload strategy is configured
+
+If a pushed commit changes `deploy/app.env`, the deploy script restarts the user service so the new environment takes effect. This is the intended way to send settings such as shell changes to the server without manual SSH edits.
 
 When you use `scripts/install_deployment_instance.sh`, the script installs a real cron entry for that specific checkout automatically unless you pass `--skip-cron`.
 

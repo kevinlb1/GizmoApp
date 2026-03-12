@@ -15,7 +15,7 @@ Options:
   --name NAME            URL path and checkout directory name, e.g. "todoapp"
   --repo-url URL         Git URL for the fork/template-derived repository
   --branch BRANCH        Git branch to deploy (default: main)
-  --shell SHELL          graphical or text (default: graphical)
+  --shell SHELL          graphical or text fallback when deploy/app.env does not set GIZMOAPP_SHELL (default: graphical)
   --app-title TITLE      Human-readable app title (default: NAME)
   --base-dir DIR         Parent directory for deployments (default: /home/kevinlb/bin)
   --domain DOMAIN        Public host name (default: vickrey10.cs.ubc.ca)
@@ -278,8 +278,14 @@ fi
 chmod 600 "${APP_DIR}/.env"
 
 PORT="$(pick_port)"
+tracked_shell=""
+if [[ -f "${APP_DIR}/deploy/app.env" ]]; then
+  tracked_shell="$(get_env_value "${APP_DIR}/deploy/app.env" GIZMOAPP_SHELL)"
+fi
+effective_shell="${tracked_shell:-${SHELL_VARIANT}}"
+
 set_env_value "${APP_DIR}/.env" GIZMOAPP_APP_NAME "${APP_TITLE}"
-set_env_value "${APP_DIR}/.env" GIZMOAPP_SHELL "${SHELL_VARIANT}"
+set_env_value "${APP_DIR}/.env" GIZMOAPP_SHELL "${effective_shell}"
 set_env_value "${APP_DIR}/.env" GIZMOAPP_URL_PREFIX "${URL_PREFIX}"
 set_env_value "${APP_DIR}/.env" GIZMOAPP_DB_PATH "${APP_DIR}/var/data/${NAME}.sqlite3"
 set_env_value "${APP_DIR}/.env" GIZMOAPP_PORT "${PORT}"
@@ -369,7 +375,10 @@ echo "Deployment instance is ready:"
 echo "  App title: ${APP_TITLE}"
 echo "  Repo checkout: ${APP_DIR}"
 echo "  Branch: ${BRANCH}"
-echo "  Shell: ${SHELL_VARIANT}"
+echo "  Shell: ${effective_shell}"
+if [[ -n "${tracked_shell}" ]]; then
+  echo "  Shell source: deploy/app.env"
+fi
 echo "  URL: http://${DOMAIN}${URL_PREFIX}/"
 echo "  Local gunicorn port: ${PORT}"
 echo "  User service file: ${SERVICE_FILE}"

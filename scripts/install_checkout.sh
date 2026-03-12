@@ -17,6 +17,7 @@ fi
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_HELPER="${ROOT_DIR}/scripts/envfile.py"
+SYNC_DEPLOY_ENV="${ROOT_DIR}/scripts/sync_deploy_env.sh"
 cd "${ROOT_DIR}"
 
 if [[ ! -f "${ROOT_DIR}/.env.example" ]]; then
@@ -35,6 +36,19 @@ if [[ ! -f "${ROOT_DIR}/.env" ]]; then
 fi
 
 chmod 600 "${ROOT_DIR}/.env"
+
+if [[ -x "${SYNC_DEPLOY_ENV}" ]]; then
+  if "${SYNC_DEPLOY_ENV}"; then
+    :
+  else
+    sync_status="$?"
+    if [[ "${sync_status}" -eq 10 ]]; then
+      echo "Applied git-tracked deployment settings from deploy/app.env."
+    else
+      exit "${sync_status}"
+    fi
+  fi
+fi
 
 while IFS= read -r -d '' env_entry; do
   export "${env_entry}"
@@ -59,6 +73,6 @@ fi
 echo
 echo "Checkout install complete for ${ROOT_DIR}."
 echo "Next steps:"
-echo "  1. Review ${ROOT_DIR}/.env"
+echo "  1. Review ${ROOT_DIR}/.env for machine-specific values only"
 echo "  2. Start or reload the gunicorn user service for this checkout"
 echo "  3. Ensure nginx routes traffic to the configured GIZMOAPP_URL_PREFIX and GIZMOAPP_PORT"

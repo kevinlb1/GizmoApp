@@ -47,6 +47,7 @@
 ## Key Files
 - `README.md`: human-readable setup and deployment instructions
 - `.env.example`: runtime settings template, including `GIZMOAPP_SHELL` and `GIZMOAPP_URL_PREFIX`
+- `deploy/app.env`: git-tracked deployment settings that cron should apply from pushed commits, such as `GIZMOAPP_SHELL`
 - `server/manage.py`: local management commands such as `init-db`, `describe`, and `run-dev`
 - `server/gizmoapp_server/shells.py`: shell definitions and shell-specific metadata
 - `server/gizmoapp_server/views.py`: page routes and shell/template selection
@@ -54,6 +55,7 @@
 - `server/gizmoapp_server/db.py`: SQLite schema, seeding, and DB helpers
 - `scripts/install_machine_dependencies.sh`: one-time host bootstrap for system packages
 - `scripts/envfile.py`: shared helper for safely reading and writing shell-compatible `.env` files
+- `scripts/sync_deploy_env.sh`: merges git-tracked settings from `deploy/app.env` into the live `.env` without overwriting machine-specific values
 - `scripts/install_nginx_instance_router.sh`: one-time nginx bootstrap so future instance installs can update nginx automatically
 - `scripts/nginx_router_bootstrap.py`: helper that inserts the managed include into the correct nginx server block
 - `scripts/migrate_nginx_to_neutral_host.sh`: temporary helper for migrating the live server from the legacy `ai100` nginx filename to a neutral `vickrey10` host file
@@ -72,6 +74,7 @@
 ## First Steps For A Fresh Session
 - Read `AGENTS.md` and `README.md` before making architectural assumptions.
 - Check which shell is active or intended by inspecting `.env`, `GIZMOAPP_SHELL`, or the gunicorn target.
+- For template-derived apps, prefer changing git-tracked runtime settings in `deploy/app.env` and pushing them, rather than SSHing into the server to edit `.env`.
 - If the user asks for a feature, decide first whether it belongs in the graphical shell, the text shell, or shared backend/API code.
 - Preserve deployability while editing: if runtime behavior, dependencies, routes, or operational steps change, update `README.md` and this file.
 - Keep local install artifacts and machine-specific files out of Git; update `.gitignore` when new ones appear.
@@ -94,6 +97,8 @@
 - The app may be hosted under a URL prefix such as `/demo-app` or `/<repo-name>`, so routes and assets should support a configurable prefix.
 - Multiple independent derived apps may be deployed on the same host under different path prefixes such as `/todoapp` or `/scoreboard`.
 - Deployment scripts treat `.env` as shell-compatible configuration, not arbitrary shell code. Keep `.env` values compatible with `scripts/envfile.py`.
+- For template-derived deployments, treat `deploy/app.env` as the git-controlled source of truth for non-secret runtime choices such as `GIZMOAPP_SHELL`.
+- Treat the live `.env` on the server as machine-specific state for secrets, ports, DB paths, service names, and per-instance URL prefixes.
 - The intended low-friction production shape is: run the one-time nginx router bootstrap once, then let each future per-instance install register its own nginx snippet automatically.
 - Prefer a neutral host config file such as `/etc/nginx/sites-enabled/vickrey10`, not an app-named file such as `ai100`, as the long-term home for path-based routing.
 - Non-scaffold apps should usually keep their own runtime/service/deploy process and only share the neutral nginx host layout plus one snippet per app route.
@@ -106,13 +111,14 @@
 - Include a minimal backend API, a sample database schema, and a lightweight admin/health surface.
 - Provide a manual server install script for dependencies; do not make cron responsible for first-time machine setup.
 - Design deploy automation so it can fast-forward from git in user mode and reload `gunicorn` only when backend/runtime changes require it.
+- A push to the app repository should be the normal way to send template-managed runtime changes to the server. Avoid requiring manual SSH edits for settings such as shell selection.
 - Keep shell variants sharing the same backend and deployment path where practical; selecting which shell is served should be a deployment choice, not a repo split.
 - If dependencies, runtime commands, route prefixes, or deployment steps change, update `.env.example`, `README.md`, deploy examples, and this file together.
 - Prefer GitHub template-repository usage over forks when this codebase is being reused as a starting point for independent apps.
 - Preserve the current simple mental model:
   - install host packages once with `scripts/install_machine_dependencies.sh`
   - install a specific checkout with `scripts/install_checkout.sh` or `scripts/install_deployment_instance.sh`
-  - choose shell with `GIZMOAPP_SHELL`
+  - choose the git-tracked default shell with `deploy/app.env`
   - serve with gunicorn
   - let cron run `scripts/deploy_from_git.sh`
 - Static asset changes generally do not require a gunicorn reload; Python code and templates generally do.
@@ -127,9 +133,9 @@
 ## Deployment Checklist
 - The canonical starter checkout may live at `/home/kevinlb/bin/GizmoApp`, but derived app instances should usually live at `/home/kevinlb/bin/<name>`.
 - Copy `.env.example` to `.env` on the server and set at least:
-  - `GIZMOAPP_SHELL=graphical` or `GIZMOAPP_SHELL=text`
   - `GIZMOAPP_URL_PREFIX` if the app is mounted under a prefix such as `/<repo-name>`
   - a real `GIZMOAPP_SECRET_KEY`
+- Put git-controlled runtime choices such as `GIZMOAPP_SHELL` in `deploy/app.env`, commit them, and push them so cron can apply them on the server.
 - Run `./scripts/install_server.sh` manually after the initial clone or after major environment changes.
 - Configure gunicorn from `deploy/gizmoapp-gunicorn.service.example`.
 - Configure nginx from `deploy/nginx-location.example.conf`.
