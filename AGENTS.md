@@ -6,6 +6,7 @@
 3. Update this `AGENTS.md` whenever a task changes important operational, deployment, workflow, or safety context.
 4. Prefer changes that make future Codex edits easy: keep structure explicit, keep files reasonably small, and avoid unnecessary complexity.
 5. If Git author identity is missing, prefer configuring a repo-local identity instead of changing global Git settings without explicit user direction.
+6. If a task installs or generates local-only files that should not live in the repository, add them to `.gitignore` as part of the same task.
 
 ## Project Intent
 - This repository is intended to become a blank webapp scaffold with multiple frontend shell variants.
@@ -73,6 +74,7 @@
 - Check which shell is active or intended by inspecting `.env`, `GIZMOAPP_SHELL`, or the gunicorn target.
 - If the user asks for a feature, decide first whether it belongs in the graphical shell, the text shell, or shared backend/API code.
 - Preserve deployability while editing: if runtime behavior, dependencies, routes, or operational steps change, update `README.md` and this file.
+- Keep local install artifacts and machine-specific files out of Git; update `.gitignore` when new ones appear.
 - After completing work, run the relevant validation you can run locally and then commit without pushing.
 
 ## Non-Expert User Support

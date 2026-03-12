@@ -91,6 +91,7 @@ For template-derived apps, the intended workflow is:
 - complete a task
 - commit it with a descriptive message
 - push it so the deployment cron job can pick it up, unless the user explicitly wants to keep the work local
+- if the task installs or generates local-only files that do not belong in the repo, add them to `.gitignore`
 
 ## API Surface
 
