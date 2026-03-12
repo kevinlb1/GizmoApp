@@ -46,6 +46,7 @@
 
 ## Key Files
 - `README.md`: human-readable setup and deployment instructions
+- `docs/design-overview.md`: architecture and design rationale for the scaffold
 - `.env.example`: runtime settings template, including `GIZMOAPP_SHELL` and `GIZMOAPP_URL_PREFIX`
 - `deploy/app.env`: git-tracked deployment settings that cron should apply from pushed commits, such as `GIZMOAPP_SHELL`
 - `server/manage.py`: local management commands such as `init-db`, `describe`, and `run-dev`
@@ -72,7 +73,7 @@
 - `deploy/user-crontab.example`: example once-per-minute deployment cron entry
 
 ## First Steps For A Fresh Session
-- Read `AGENTS.md` and `README.md` before making architectural assumptions.
+- Read `AGENTS.md`, `README.md`, and `docs/design-overview.md` before making architectural assumptions.
 - Check which shell is active or intended by inspecting `.env`, `GIZMOAPP_SHELL`, or the gunicorn target.
 - For template-derived apps, prefer changing git-tracked runtime settings in `deploy/app.env` and pushing them, rather than SSHing into the server to edit `.env`.
 - If the user asks for a feature, decide first whether it belongs in the graphical shell, the text shell, or shared backend/API code.

@@ -18,9 +18,21 @@ The initial scaffold intentionally avoids Node and a frontend bundler. That keep
 - `server/` contains the Flask app, SQLite wiring, and HTML/CSS/JS assets
 - `scripts/` contains install, deploy, and asset-generation helpers
 - `deploy/` contains example `gunicorn`, `nginx`, and cron snippets
+- `docs/design-overview.md` records the intended architecture, config split, and deployment model
 - `deploy/app.env` contains git-tracked deployment settings that should reach the server through normal pushes
 - `deploy/non-scaffold-app-deployment.md` explains how existing non-GizmoApp apps should fit into the neutral nginx host layout
 - `tests/` contains API and routing smoke tests
+
+## Design Overview
+
+The short operational instructions in this README assume the design choices in
+[`docs/design-overview.md`](docs/design-overview.md). Read that file when you
+need the reasoning behind:
+
+- why there are two frontend shells in one repo
+- why deployment is path-prefix-aware
+- why `deploy/app.env` and `.env` have different roles
+- why cron deploys, user services, and nginx snippets are structured the way they are
 
 ## Deployment Model
 
