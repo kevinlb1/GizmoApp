@@ -20,6 +20,15 @@ The initial scaffold intentionally avoids Node and a frontend bundler. That keep
 - `deploy/` contains example `gunicorn`, `nginx`, and cron snippets
 - `tests/` contains API and routing smoke tests
 
+## Deployment Model
+
+There are now two separate deployment installation layers:
+
+- Machine bootstrap: install the system packages needed on the host once
+- App instance install: clone one specific repo/fork into a named directory, configure it, and make it serve at `vickrey10.cs.ubc.ca/name`
+
+This split is meant to support multiple independent apps derived from this starter on the same machine.
+
 ## Local Development
 
 1. Copy `.env.example` to `.env` if you want to test a non-root URL prefix such as `/AI100`.
@@ -88,15 +97,81 @@ If `GIZMOAPP_URL_PREFIX` is set, all of those routes live under the prefix. For 
 
 ## Deployment Notes
 
-### Manual server install
+### One-time machine bootstrap
 
-Run this once on the server after the repository is cloned:
+Run this once per deployment machine:
+
+```bash
+./scripts/install_machine_dependencies.sh
+```
+
+This installs the required Ubuntu/Debian packages such as Python, `python3-venv`, Git, SQLite, curl, and cron.
+
+### Current-checkout install
+
+If the current checkout is itself the live deployment checkout, run:
 
 ```bash
 ./scripts/install_server.sh
 ```
 
-The script installs system packages, creates `.venv`, installs Python dependencies, initializes the SQLite database, and respects the selected `GIZMOAPP_SHELL` from `.env`.
+That convenience wrapper runs both the machine bootstrap and the current-checkout initialization.
+
+If machine dependencies are already installed and you only want to initialize the current checkout, run:
+
+```bash
+./scripts/install_checkout.sh
+```
+
+### Install a fork/template-derived app at `/name`
+
+After a derived repo exists on GitHub, install it onto the server with:
+
+```bash
+./scripts/install_deployment_instance.sh \
+  --name myapp \
+  --repo-url git@github.com:YOUR_ACCOUNT/YOUR_REPO.git \
+  --branch main \
+  --shell text
+```
+
+This script:
+
+- creates or updates `/home/kevinlb/bin/myapp`
+- checks out `origin/main`
+- writes `/home/kevinlb/bin/myapp/.env`
+- picks a free local gunicorn port unless you specify `--port`
+- creates the virtualenv and installs Python dependencies
+- initializes the SQLite database
+- writes a user-level systemd service at `~/.config/systemd/user/myapp.service`
+- installs a once-per-minute cron entry for `scripts/deploy_from_git.sh`
+- generates an nginx location snippet at `/home/kevinlb/bin/myapp/var/generated/nginx-location.conf`
+
+The default public URL becomes `http://vickrey10.cs.ubc.ca/myapp/`.
+
+### After running `install_deployment_instance.sh`
+
+1. Review `/home/kevinlb/bin/myapp/.env`.
+2. Add the generated nginx snippet from `/home/kevinlb/bin/myapp/var/generated/nginx-location.conf` to the `vickrey10.cs.ubc.ca` nginx server block.
+3. Reload nginx:
+
+```bash
+sudo systemctl reload nginx
+```
+
+4. Check the user service:
+
+```bash
+systemctl --user status myapp.service
+```
+
+5. Visit `http://vickrey10.cs.ubc.ca/myapp/`.
+
+If the app should stay running even when the deployment user is logged out, a privileged user may also need to run:
+
+```bash
+sudo loginctl enable-linger kevinlb
+```
 
 ### `gunicorn` reload behavior
 
@@ -111,6 +186,8 @@ The example cron entry in `deploy/user-crontab.example` calls `scripts/deploy_fr
 - Reinstalls Python packages only when `server/requirements.txt` changes
 - Re-initializes the database idempotently
 - Reloads `gunicorn` when runtime files changed and a reload strategy is configured
+
+When you use `scripts/install_deployment_instance.sh`, the script installs a real cron entry for that specific checkout automatically unless you pass `--skip-cron`.
 
 ### HTTPS and installability
 

@@ -50,7 +50,10 @@
 - `server/gizmoapp_server/views.py`: page routes and shell/template selection
 - `server/gizmoapp_server/api.py`: JSON API routes
 - `server/gizmoapp_server/db.py`: SQLite schema, seeding, and DB helpers
-- `scripts/install_server.sh`: one-time server dependency/bootstrap script
+- `scripts/install_machine_dependencies.sh`: one-time host bootstrap for system packages
+- `scripts/install_checkout.sh`: initialize the current checkout after machine dependencies exist
+- `scripts/install_deployment_instance.sh`: install one named deployment instance from a repo URL
+- `scripts/install_server.sh`: compatibility wrapper that runs machine bootstrap plus current-checkout install
 - `scripts/deploy_from_git.sh`: cron-friendly fast-forward deploy script
 - `deploy/gizmoapp-gunicorn.service.example`: example user service
 - `deploy/nginx-location.example.conf`: example nginx location block
@@ -78,6 +81,7 @@
 - The intended server automation is a once-per-minute cron job that fetches repository updates and deploys them when new commits are available.
 - The deployment branch is `main`.
 - The app may be hosted under a URL prefix such as `/AI100`, so routes and assets should support a configurable prefix.
+- Multiple independent derived apps may be deployed on the same host under different path prefixes such as `/todoapp` or `/scoreboard`.
 
 ## Operational Guidance
 - Treat deployment automation, cron configuration, and `gunicorn` reload behavior as important operational context and record notable changes here.
@@ -91,14 +95,16 @@
 - If dependencies, runtime commands, route prefixes, or deployment steps change, update `.env.example`, `README.md`, deploy examples, and this file together.
 - Prefer GitHub template-repository usage over forks when this codebase is being reused as a starting point for independent apps.
 - Preserve the current simple mental model:
-  - install once with `scripts/install_server.sh`
+  - install host packages once with `scripts/install_machine_dependencies.sh`
+  - install a specific checkout with `scripts/install_checkout.sh` or `scripts/install_deployment_instance.sh`
   - choose shell with `GIZMOAPP_SHELL`
   - serve with gunicorn
   - let cron run `scripts/deploy_from_git.sh`
 - Static asset changes generally do not require a gunicorn reload; Python code and templates generally do.
+- For derived apps, prefer `scripts/install_deployment_instance.sh` over hand-editing service files and cron entries.
 
 ## Deployment Checklist
-- Server checkout should live at `/home/kevinlb/bin/GizmoApp`.
+- The canonical starter checkout may live at `/home/kevinlb/bin/GizmoApp`, but derived app instances should usually live at `/home/kevinlb/bin/<name>`.
 - Copy `.env.example` to `.env` on the server and set at least:
   - `GIZMOAPP_SHELL=graphical` or `GIZMOAPP_SHELL=text`
   - `GIZMOAPP_URL_PREFIX` if the app is mounted under a prefix such as `/AI100`
@@ -108,6 +114,19 @@
 - Configure nginx from `deploy/nginx-location.example.conf`.
 - Configure the user cron job from `deploy/user-crontab.example`.
 - If the deployment shape changes, document the new exact steps in `README.md` and summarize them here.
+
+## Multi-App Deployment
+- The host-level dependency script is `scripts/install_machine_dependencies.sh`.
+- The per-instance deployment script is `scripts/install_deployment_instance.sh`.
+- A deployment instance maps a repo URL plus a name to:
+  - checkout directory `/home/kevinlb/bin/<name>`
+  - URL prefix `/<name>`
+  - user service `<name>.service`
+  - its own SQLite file under that checkout
+  - its own cron entry calling `scripts/deploy_from_git.sh`
+- The per-instance script also generates an nginx location snippet for the chosen name and port.
+- User-level systemd deployments may require `loginctl enable-linger <user>` once on the host so services survive logout.
+- If a future task changes instance layout, env keys, or service generation, record it here.
 
 ## Editing Priorities
 - Prefer shared backend changes when a feature should work in both shells.

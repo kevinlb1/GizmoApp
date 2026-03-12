@@ -24,7 +24,7 @@ if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
 fi
 
 if [[ ! -x "${PYTHON_BIN}" ]]; then
-  echo "Virtualenv is missing. Run ./scripts/install_server.sh first."
+  echo "Virtualenv is missing. Run ./scripts/install_checkout.sh or ./scripts/install_server.sh first."
   exit 1
 fi
 
