@@ -54,6 +54,8 @@
 - `scripts/envfile.py`: shared helper for safely reading and writing shell-compatible `.env` files
 - `scripts/install_nginx_instance_router.sh`: one-time nginx bootstrap so future instance installs can update nginx automatically
 - `scripts/nginx_router_bootstrap.py`: helper that inserts the managed include into the correct nginx server block
+- `scripts/migrate_nginx_to_neutral_host.sh`: temporary helper for migrating the live server from the legacy `ai100` nginx filename to a neutral `vickrey10` host file
+- `scripts/register_nginx_instance_snippet.sh`: registers an already-generated app snippet into the managed nginx include directory
 - `scripts/install_checkout.sh`: initialize the current checkout after machine dependencies exist
 - `scripts/install_deployment_instance.sh`: install one named deployment instance from a repo URL
 - `scripts/install_server.sh`: compatibility wrapper that runs machine bootstrap plus current-checkout install
@@ -113,6 +115,7 @@
 - The generated nginx snippet for per-instance installs should handle both `/<name>` and `/<name>/`.
 - After the one-time `scripts/install_nginx_instance_router.sh` bootstrap, future app installs should not require manual nginx file edits.
 - When migrating an existing app-specific nginx host file such as `ai100`, preserve the existing `/AI100` route by moving it into `/etc/nginx/gizmoapp-instances/AI100.conf` before disabling the old site file.
+- For the current server transition, a temporary scripted path exists: `scripts/migrate_nginx_to_neutral_host.sh` copies the live `ai100` host config to `vickrey10`, then bootstraps managed instance includes so `/AI100` keeps working while future apps stop depending on the `ai100` filename.
 
 ## Deployment Checklist
 - The canonical starter checkout may live at `/home/kevinlb/bin/GizmoApp`, but derived app instances should usually live at `/home/kevinlb/bin/<name>`.

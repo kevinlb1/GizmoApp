@@ -209,6 +209,34 @@ cd /home/kevinlb/bin/GizmoApp
 From that point on, future app installs can register themselves automatically
 without editing nginx by hand.
 
+For the current server, a more direct migration helper is available:
+
+```bash
+cd /home/kevinlb/bin/GizmoApp
+./scripts/migrate_nginx_to_neutral_host.sh
+```
+
+That helper is tailored to the existing `ai100` to `vickrey10` rename and will:
+
+- copy the live enabled site from `/etc/nginx/sites-enabled/ai100`
+- create `/etc/nginx/sites-available/vickrey10`
+- enable `/etc/nginx/sites-enabled/vickrey10`
+- disable the old `/etc/nginx/sites-enabled/ai100` path
+- bootstrap `/etc/nginx/gizmoapp-instances/*.conf`
+- validate and reload nginx
+
+Because it copies the current live host config first, the existing `/AI100`
+route should keep working after the migration.
+
+If you have already-installed app instances that predate automatic nginx
+registration, register them once with:
+
+```bash
+./scripts/register_nginx_instance_snippet.sh \
+  --name gizmotest \
+  --snippet /home/kevinlb/bin/gizmotest/var/generated/nginx-location.conf
+```
+
 ### Current-checkout install
 
 If the current checkout is itself the live deployment checkout, run:
