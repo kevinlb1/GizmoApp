@@ -32,7 +32,7 @@ This split is meant to support multiple independent apps derived from this start
 
 ## Local Development
 
-1. Copy `.env.example` to `.env` if you want to test a non-root URL prefix such as `/AI100`.
+1. Copy `.env.example` to `.env` if you want to change local settings. For a local prefix test, set `GIZMOAPP_URL_PREFIX=/demo-app`.
 2. Create the virtualenv and install dependencies:
 
 ```bash
@@ -58,7 +58,7 @@ make dev-graphical
 make dev-text
 ```
 
-The default app URL is `http://127.0.0.1:8001/` unless you set `GIZMOAPP_URL_PREFIX`, in which case the app lives under that prefix.
+The development commands now auto-read a repo-root `.env`. The default app URL is `http://127.0.0.1:8001/` unless you set `GIZMOAPP_URL_PREFIX`, in which case the app lives under that prefix.
 
 ## Shell Selection
 
@@ -100,7 +100,7 @@ For template-derived apps, the intended workflow is:
 - `GET /healthz` returns a simple JSON health response
 - `GET /admin/` shows a small admin summary page
 
-If `GIZMOAPP_URL_PREFIX` is set, all of those routes live under the prefix. For example, `/AI100/api/bootstrap`.
+If `GIZMOAPP_URL_PREFIX` is set, all of those routes live under the prefix. For example, `/demo-app/api/bootstrap`.
 
 ## Deployment Notes
 
@@ -121,7 +121,7 @@ run this once on the server:
 
 ```bash
 ./scripts/install_nginx_instance_router.sh \
-  --server-config /etc/nginx/sites-enabled/ai100 \
+  --server-config /etc/nginx/sites-enabled/vickrey10 \
   --server-name vickrey10.cs.ubc.ca
 ```
 
@@ -136,7 +136,7 @@ file:
 
 ```bash
 ./scripts/install_nginx_instance_router.sh \
-  --server-config /etc/nginx/sites-enabled/ai100
+  --server-config /etc/nginx/sites-enabled/vickrey10
 ```
 
 After that one-time bootstrap, future `install_deployment_instance.sh` runs will
@@ -193,7 +193,7 @@ sudo ln -s /etc/nginx/sites-available/vickrey10 /etc/nginx/sites-enabled/vickrey
 
 ```bash
 sudo nginx -t
-curl -I http://vickrey10.cs.ubc.ca/AI100/
+curl -sS -D - http://vickrey10.cs.ubc.ca/AI100/ -o /dev/null
 ```
 
 6. Only after `/AI100/` still works through the new host file, disable the old
@@ -233,7 +233,9 @@ That helper is tailored to the existing `ai100` to `vickrey10` rename and will:
 - validate and reload nginx
 
 Because it copies the current live host config first, the existing `/AI100`
-route should keep working after the migration.
+route should keep working after the migration. That route may remain inline in
+the neutral host file until you choose to normalize it into its own managed
+snippet.
 
 If you have already-installed app instances that predate automatic nginx
 registration, register them once with:

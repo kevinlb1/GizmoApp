@@ -28,7 +28,7 @@
 - If the user asks for canvas, sprites, animation, game-like UI, rich visual interaction, or possible future 3D, prefer the graphical shell.
 - Keep both shells viable unless the user explicitly asks to remove one.
 - Favor simple deployable implementations over introducing heavy tooling. The current frontend strategy is intentionally build-free.
-- When adding features, preserve the ability to run behind an nginx path prefix such as `/AI100`.
+- When adding features, preserve the ability to run behind an nginx path prefix such as `/demo-app` or `/<repo-name>`.
 - Treat this repository as a starter/template for future independent apps. Prefer design choices that make cloning and rebranding easy.
 
 ## Architecture Snapshot
@@ -89,7 +89,7 @@
 - `gunicorn` is already running on the target machine, with `nginx` in front of it.
 - The intended server automation is a once-per-minute cron job that fetches repository updates and deploys them when new commits are available.
 - The deployment branch is `main`.
-- The app may be hosted under a URL prefix such as `/AI100`, so routes and assets should support a configurable prefix.
+- The app may be hosted under a URL prefix such as `/demo-app` or `/<repo-name>`, so routes and assets should support a configurable prefix.
 - Multiple independent derived apps may be deployed on the same host under different path prefixes such as `/todoapp` or `/scoreboard`.
 - Deployment scripts treat `.env` as shell-compatible configuration, not arbitrary shell code. Keep `.env` values compatible with `scripts/envfile.py`.
 - The intended low-friction production shape is: run the one-time nginx router bootstrap once, then let each future per-instance install register its own nginx snippet automatically.
@@ -119,14 +119,14 @@
 - The generated nginx snippet for per-instance installs should handle both `/<name>` and `/<name>/`.
 - After the one-time `scripts/install_nginx_instance_router.sh` bootstrap, future app installs should not require manual nginx file edits.
 - The easiest intended server UX for new GizmoApp-derived apps is: `deploy_gizmoapp_repo.sh REPO_URL`, optionally copied into `~/bin`.
-- When migrating an existing app-specific nginx host file such as `ai100`, preserve the existing `/AI100` route by moving it into `/etc/nginx/gizmoapp-instances/AI100.conf` before disabling the old site file.
+- When migrating an existing app-specific nginx host file such as `ai100`, preserve the existing `/AI100` route before disabling the old site file, either by leaving the copied route inline temporarily or by moving it into `/etc/nginx/gizmoapp-instances/AI100.conf`.
 - For the current server transition, a temporary scripted path exists: `scripts/migrate_nginx_to_neutral_host.sh` copies the live `ai100` host config to `vickrey10`, then bootstraps managed instance includes so `/AI100` keeps working while future apps stop depending on the `ai100` filename.
 
 ## Deployment Checklist
 - The canonical starter checkout may live at `/home/kevinlb/bin/GizmoApp`, but derived app instances should usually live at `/home/kevinlb/bin/<name>`.
 - Copy `.env.example` to `.env` on the server and set at least:
   - `GIZMOAPP_SHELL=graphical` or `GIZMOAPP_SHELL=text`
-  - `GIZMOAPP_URL_PREFIX` if the app is mounted under a prefix such as `/AI100`
+  - `GIZMOAPP_URL_PREFIX` if the app is mounted under a prefix such as `/<repo-name>`
   - a real `GIZMOAPP_SECRET_KEY`
 - Run `./scripts/install_server.sh` manually after the initial clone or after major environment changes.
 - Configure gunicorn from `deploy/gizmoapp-gunicorn.service.example`.

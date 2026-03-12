@@ -1,9 +1,54 @@
 from __future__ import annotations
 
 import os
+import re
+import shlex
 from pathlib import Path
 
 from .shells import DEFAULT_SHELL, available_shells, shell_settings
+
+ASSIGNMENT_RE = re.compile(
+    r"^\s*(?:export\s+)?(?P<key>[A-Za-z_][A-Za-z0-9_]*)=(?P<raw>.*)$"
+)
+
+
+def parse_env_assignment(line: str, line_number: int) -> tuple[str, str] | None:
+    match = ASSIGNMENT_RE.match(line)
+    if match is None:
+        return None
+
+    raw_value = match.group("raw").strip()
+    if raw_value == "":
+        return match.group("key"), ""
+
+    try:
+        parts = shlex.split(raw_value, posix=True)
+    except ValueError as exc:
+        raise RuntimeError(f"Invalid env syntax on line {line_number}: {exc}") from exc
+
+    if len(parts) != 1:
+        raise RuntimeError(
+            f"Invalid env syntax on line {line_number}: expected one value token."
+        )
+
+    return match.group("key"), parts[0]
+
+
+def load_local_env(env_path: Path, environ: dict[str, str] | None = None) -> None:
+    if not env_path.exists():
+        return
+
+    target = environ if environ is not None else os.environ
+    for index, line in enumerate(env_path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+
+        assignment = parse_env_assignment(line, index)
+        if assignment is None:
+            continue
+
+        key, value = assignment
+        target.setdefault(key, value)
 
 
 def normalize_url_prefix(value: str | None) -> str:
@@ -20,8 +65,9 @@ def normalize_url_prefix(value: str | None) -> str:
     return trimmed.rstrip("/")
 
 
-def load_settings(shell_variant: str | None = None) -> dict:
-    repo_root = Path(__file__).resolve().parents[2]
+def load_settings(shell_variant: str | None = None, repo_root: Path | None = None) -> dict:
+    repo_root = repo_root or Path(__file__).resolve().parents[2]
+    load_local_env(repo_root / ".env")
     data_dir = repo_root / "var" / "data"
     log_dir = repo_root / "var" / "log"
     static_dir = Path(__file__).resolve().parent / "static"

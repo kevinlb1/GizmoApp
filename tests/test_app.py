@@ -28,27 +28,27 @@ class GizmoAppTestCase(unittest.TestCase):
             temp_dir.cleanup()
 
     def test_bootstrap_endpoint_returns_seed_data(self):
-        app = self.make_app("/AI100")
+        app = self.make_app("/demo-app")
         client = app.test_client()
 
-        response = client.get("/AI100/api/bootstrap")
+        response = client.get("/demo-app/api/bootstrap")
         payload = response.get_json()
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(payload["app"]["urlPrefix"], "/AI100")
+        self.assertEqual(payload["app"]["urlPrefix"], "/demo-app")
         self.assertEqual(payload["app"]["shell"], "graphical")
         self.assertGreaterEqual(len(payload["sampleNodes"]), 3)
 
     def test_manifest_uses_configured_prefix(self):
-        app = self.make_app("/AI100")
+        app = self.make_app("/demo-app")
         client = app.test_client()
 
-        response = client.get("/AI100/manifest.webmanifest")
+        response = client.get("/demo-app/manifest.webmanifest")
         payload = response.get_json()
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(payload["scope"], "/AI100/")
-        self.assertEqual(payload["start_url"], "/AI100/")
+        self.assertEqual(payload["scope"], "/demo-app/")
+        self.assertEqual(payload["start_url"], "/demo-app/")
 
     def test_can_insert_sample_node(self):
         app = self.make_app("")
