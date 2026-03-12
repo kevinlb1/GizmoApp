@@ -19,6 +19,9 @@ def _client_config() -> dict:
     return {
         "appName": current_app.config["APP_NAME"],
         "tagline": current_app.config["APP_TAGLINE"],
+        "shell": current_app.config["APP_SHELL"],
+        "shellLabel": current_app.config["APP_SHELL_LABEL"],
+        "shellDescription": current_app.config["APP_SHELL_DESCRIPTION"],
         "rootPath": scoped_path(prefix),
         "apiBase": scoped_path(prefix, "api"),
         "adminUrl": scoped_path(prefix, "admin/"),
@@ -34,7 +37,7 @@ def _manifest_payload() -> dict:
     return {
         "name": current_app.config["APP_NAME"],
         "short_name": current_app.config["PWA_SHORT_NAME"],
-        "description": current_app.config["APP_TAGLINE"],
+        "description": current_app.config["APP_SHELL_DESCRIPTION"],
         "start_url": root_path,
         "scope": root_path,
         "display": "standalone",
@@ -101,11 +104,14 @@ def register_page_routes(app: Flask) -> None:
         return render_template(
             "admin.html",
             app_name=current_app.config["APP_NAME"],
+            shell_label=current_app.config["APP_SHELL_LABEL"],
+            shell_variant=current_app.config["APP_SHELL"],
             root_path=root_path,
             now=datetime.now(UTC).isoformat(),
             summary=summary,
             sample_nodes=sample_nodes,
             notes=current_app.config["ADMIN_NOTES"],
+            available_shells=current_app.config["AVAILABLE_SHELLS"],
         )
 
     @app.route(root_path, defaults={"path": ""})
@@ -115,11 +121,14 @@ def register_page_routes(app: Flask) -> None:
             abort(404)
 
         return render_template(
-            "index.html",
+            current_app.config["APP_SHELL_TEMPLATE"],
             app_name=current_app.config["APP_NAME"],
             app_tagline=current_app.config["APP_TAGLINE"],
+            shell_label=current_app.config["APP_SHELL_LABEL"],
+            shell_variant=current_app.config["APP_SHELL"],
+            shell_description=current_app.config["APP_SHELL_DESCRIPTION"],
             base_href=root_path,
-            asset_base=scoped_path(prefix, "app/"),
+            asset_base=scoped_path(prefix, current_app.config["APP_SHELL_ASSET_SUBPATH"]),
             admin_url=scoped_path(prefix, "admin/"),
             manifest_url=scoped_path(prefix, "manifest.webmanifest"),
             icon_url=scoped_path(prefix, "icons/icon-192.png"),

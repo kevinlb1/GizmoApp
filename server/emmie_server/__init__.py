@@ -6,16 +6,19 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from .api import register_api_routes
 from .config import load_settings
 from .db import close_db, initialize_database
+from .shells import shell_settings
 from .views import register_page_routes
 
 
-def create_app(test_config: dict | None = None) -> Flask:
+def create_app(test_config: dict | None = None, shell_variant: str | None = None) -> Flask:
     app = Flask(__name__, template_folder="templates", static_folder=None)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_host=1, x_port=1, x_proto=1, x_prefix=1)
-    app.config.update(load_settings())
+    app.config.update(load_settings(shell_variant=shell_variant))
 
     if test_config:
         app.config.update(test_config)
+
+    app.config.update(shell_settings(app.config.get("APP_SHELL")))
 
     initialize_database(app.config)
     app.teardown_appcontext(close_db)
@@ -23,4 +26,3 @@ def create_app(test_config: dict | None = None) -> Flask:
     register_api_routes(app)
     register_page_routes(app)
     return app
-

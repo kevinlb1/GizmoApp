@@ -17,6 +17,11 @@ if [[ ! -f "${ROOT_DIR}/.env" ]]; then
   echo "Created ${ROOT_DIR}/.env from .env.example. Review the values before starting gunicorn."
 fi
 
+set -a
+# shellcheck source=/dev/null
+. "${ROOT_DIR}/.env"
+set +a
+
 mkdir -p "${ROOT_DIR}/var/data" "${ROOT_DIR}/var/log"
 python3 -m venv "${ROOT_DIR}/.venv"
 "${ROOT_DIR}/.venv/bin/pip" install --upgrade pip wheel
@@ -28,7 +33,7 @@ echo
 echo "Install complete."
 echo "Next steps:"
 echo "  1. Review ${ROOT_DIR}/.env"
-echo "  2. Install the user service from deploy/emmie-gunicorn.service.example"
-echo "  3. Configure nginx using deploy/nginx-location.example.conf"
-echo "  4. Add the cron entry from deploy/user-crontab.example"
-
+echo "  2. Choose EMMIE_SHELL=graphical or EMMIE_SHELL=text in ${ROOT_DIR}/.env"
+echo "  3. Install the user service from deploy/emmie-gunicorn.service.example"
+echo "  4. Configure nginx using deploy/nginx-location.example.conf"
+echo "  5. Add the cron entry from deploy/user-crontab.example"

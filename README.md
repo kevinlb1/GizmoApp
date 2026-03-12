@@ -1,10 +1,11 @@
 # Emmie
 
-Emmie is a blank graphical webapp template intended to be easy for later Codex edits. It ships with:
+Emmie is a blank webapp template repository intended to be easy for later Codex edits. It ships with:
 
 - A Python `Flask` backend that serves both the app shell and JSON API
 - A lightweight SQLite data store with a sample table and seed rows
-- A touch-friendly, installable PWA frontend built with plain ES modules and a canvas-driven graphics layer
+- A touch-friendly graphical shell with a canvas-driven scene
+- A more standard text-first application shell
 - Deployment examples for `nginx` in front of `gunicorn`
 - A cron-friendly deploy script that fast-forwards from `main` and reloads `gunicorn` only when runtime changes require it
 
@@ -40,7 +41,24 @@ make init-db
 make dev
 ```
 
+Or start a specific shell explicitly:
+
+```bash
+make dev-graphical
+make dev-text
+```
+
 The default app URL is `http://127.0.0.1:8001/` unless you set `EMMIE_URL_PREFIX`, in which case the app lives under that prefix.
+
+## Shell Selection
+
+The project keeps both blank shells in the same codebase and shares the same backend, API, database, and deployment scripts.
+
+- `server/wsgi_graphical.py` serves the graphical shell
+- `server/wsgi_text.py` serves the text-first shell
+- `server/wsgi.py` serves whichever shell is selected by `EMMIE_SHELL`
+
+On the server, the simplest approach is to keep the gunicorn target at `server.wsgi:app` and set `EMMIE_SHELL=graphical` or `EMMIE_SHELL=text` in `.env`.
 
 ## API Surface
 
@@ -62,7 +80,7 @@ Run this once on the server after the repository is cloned:
 ./scripts/install_server.sh
 ```
 
-The script installs system packages, creates `.venv`, installs Python dependencies, and initializes the SQLite database.
+The script installs system packages, creates `.venv`, installs Python dependencies, initializes the SQLite database, and respects the selected `EMMIE_SHELL` from `.env`.
 
 ### `gunicorn` reload behavior
 
@@ -81,4 +99,3 @@ The example cron entry in [deploy/user-crontab.example](/home/kevinlb/programmin
 ### HTTPS and installability
 
 Reliable PWA installation on iPhone and Chromium-based browsers requires HTTPS. If `vickrey10.cs.ubc.ca` is only available over plain HTTP, the app will still run in the browser, but install prompts and standalone behavior will be limited or unavailable.
-

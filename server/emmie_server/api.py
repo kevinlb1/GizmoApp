@@ -29,8 +29,11 @@ def _bootstrap_payload() -> dict:
             "tagline": current_app.config["APP_TAGLINE"],
             "urlPrefix": current_app.config["URL_PREFIX"],
             "mode": "public",
+            "shell": current_app.config["APP_SHELL"],
+            "shellLabel": current_app.config["APP_SHELL_LABEL"],
         },
         "health": _health_payload(),
+        "availableShells": current_app.config["AVAILABLE_SHELLS"],
         "sampleNodes": fetch_sample_nodes(connection),
     }
 

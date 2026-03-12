@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>{{ app_name }}</title>
+    <meta name="description" content="{{ shell_description }}">
+    <meta name="theme-color" content="{{ theme_color }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="{{ app_name }}">
+    <base href="{{ base_href }}">
+    <link rel="manifest" href="{{ manifest_url }}">
+    <link rel="icon" href="{{ icon_url }}" sizes="192x192">
+    <link rel="apple-touch-icon" href="{{ apple_touch_icon_url }}">
+    <link rel="stylesheet" href="{{ asset_base }}styles.css">
+  </head>
+  <body class="text-shell-body">
+    <div class="text-shell">
+      <header class="text-topbar">
+        <div>
+          <p class="text-eyebrow">{{ shell_label }} Template</p>
+          <h1>{{ app_name }}</h1>
+          <p class="text-lead">{{ shell_description }}</p>
+        </div>
+        <div class="text-actions">
+          <span class="text-health" id="text-health-pill">Booting</span>
+          <button class="text-install" id="install-button" hidden>Install app</button>
+          <a class="text-link" href="{{ admin_url }}">Admin</a>
+        </div>
+      </header>
+
+      <main class="text-layout">
+        <aside class="text-sidebar">
+          <section class="text-card">
+            <p class="text-eyebrow">Navigation</p>
+            <nav class="text-nav">
+              <a href="#overview">Overview</a>
+              <a href="#nodes">Sample data</a>
+              <a href="#notes">Blank sections</a>
+            </nav>
+          </section>
+
+          <section class="text-card">
+            <p class="text-eyebrow">Installability</p>
+            <h2>App shell ready</h2>
+            <p id="install-hint">
+              Install becomes available on supported browsers when the app is served over HTTPS.
+            </p>
+          </section>
+        </aside>
+
+        <section class="text-main">
+          <section class="text-hero text-card" id="overview">
+            <p class="text-eyebrow">Overview</p>
+            <h2>Standard app layout, no product logic yet</h2>
+            <p class="text-lead">
+              This shell is intentionally more conventional than the graphical template. It is ready
+              for forms, lists, dashboards, and workflow-driven interactions while sharing the same
+              backend, database, and deployment path.
+            </p>
+            <div class="text-metrics">
+              <article>
+                <span class="metric-label">Mode</span>
+                <strong id="mode-value">Public</strong>
+              </article>
+              <article>
+                <span class="metric-label">Shell</span>
+                <strong id="shell-value">{{ shell_label }}</strong>
+              </article>
+              <article>
+                <span class="metric-label">Prefix</span>
+                <strong id="prefix-value">/</strong>
+              </article>
+              <article>
+                <span class="metric-label">Database</span>
+                <strong id="db-value">Connecting</strong>
+              </article>
+            </div>
+          </section>
+
+          <section class="text-grid">
+            <section class="text-card" id="nodes">
+              <p class="text-eyebrow">Sample Data</p>
+              <h2>SQLite-backed records</h2>
+              <div class="table-shell">
+                <div class="table-header">
+                  <span>Name</span>
+                  <span>Slug</span>
+                  <span>Position</span>
+                </div>
+                <div class="table-rows" id="nodes-list">
+                  <div class="table-row skeleton">Loading sample nodes…</div>
+                </div>
+              </div>
+            </section>
+
+            <section class="text-card" id="notes">
+              <p class="text-eyebrow">Blank Sections</p>
+              <h2>Reserved for future workflows</h2>
+              <div class="blank-stack">
+                <article>
+                  <strong>Search / filter strip</strong>
+                  <p>Add query, status, tag, or date filtering here later.</p>
+                </article>
+                <article>
+                  <strong>Detail panel</strong>
+                  <p>Use this area for records, forms, or threaded content.</p>
+                </article>
+                <article>
+                  <strong>Activity stream</strong>
+                  <p>Ready for logs, notifications, or task histories.</p>
+                </article>
+              </div>
+            </section>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script id="emmie-config" type="application/json">{{ client_config | tojson }}</script>
+    <script type="module" src="{{ asset_base }}main.js"></script>
+  </body>
+</html>
+

@@ -93,6 +93,13 @@ body::before {
   color: var(--muted);
 }
 
+.shell-copy {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+  max-width: 46rem;
+}
+
 .layout {
   display: grid;
   gap: 1rem;
@@ -340,4 +347,3 @@ body::before {
     border-radius: 24px;
   }
 }
-

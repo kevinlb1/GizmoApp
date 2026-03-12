@@ -1,6 +1,5 @@
-import { fetchBootstrap } from "./api.js";
-import { setupInstallControls } from "./install.js";
-import { SceneRenderer } from "./scene.js";
+import { fetchBootstrap } from "../api.js";
+import { setupInstallControls } from "../install.js";
 
 
 function readConfig() {
@@ -18,40 +17,31 @@ function setText(id, value) {
 
 
 function updateHealthPill(healthy) {
-  const pill = document.getElementById("health-pill");
+  const pill = document.getElementById("text-health-pill");
   pill.dataset.state = healthy ? "healthy" : "degraded";
   pill.textContent = healthy ? "Healthy" : "Degraded";
 }
 
 
-function renderNodes(nodes) {
-  const list = document.getElementById("nodes-list");
-  list.innerHTML = "";
+function renderRows(nodes) {
+  const rows = document.getElementById("nodes-list");
+  rows.innerHTML = "";
 
   for (const node of nodes) {
-    const item = document.createElement("li");
-    item.className = "node-row";
+    const row = document.createElement("div");
+    row.className = "table-row";
 
-    const dot = document.createElement("span");
-    dot.className = "node-dot";
-    dot.style.color = node.accent_color;
-    dot.style.background = node.accent_color;
-
-    const copy = document.createElement("span");
-    copy.className = "node-copy";
-
-    const label = document.createElement("strong");
+    const label = document.createElement("span");
     label.textContent = node.label;
-    const description = document.createElement("span");
-    description.textContent = node.description;
-    copy.append(label, description);
 
-    const meta = document.createElement("span");
-    meta.className = "node-meta";
-    meta.textContent = node.slug;
+    const slug = document.createElement("span");
+    slug.textContent = node.slug;
 
-    item.append(dot, copy, meta);
-    list.appendChild(item);
+    const position = document.createElement("span");
+    position.textContent = `${node.x.toFixed(2)}, ${node.y.toFixed(2)}`;
+
+    row.append(label, slug, position);
+    rows.appendChild(row);
   }
 }
 
@@ -71,8 +61,6 @@ function registerServiceWorker(url) {
 
 async function bootstrap() {
   const config = readConfig();
-  const renderer = new SceneRenderer(document.getElementById("scene-canvas"));
-
   setupInstallControls({
     button: document.getElementById("install-button"),
     hint: document.getElementById("install-hint"),
@@ -84,17 +72,14 @@ async function bootstrap() {
 
   try {
     const payload = await fetchBootstrap(config.apiBase);
-    renderNodes(payload.sampleNodes);
-    renderer.setNodes(payload.sampleNodes);
+    renderRows(payload.sampleNodes);
     setText("mode-value", payload.app.mode);
     setText("shell-value", payload.app.shellLabel);
-    setText("api-value", "Online");
     setText("db-value", payload.health.database);
     updateHealthPill(payload.health.status === "ok");
   } catch (error) {
     console.error(error);
-    setText("api-value", "Error");
-    setText("db-value", "Unknown");
+    setText("db-value", "Error");
     updateHealthPill(false);
   }
 }

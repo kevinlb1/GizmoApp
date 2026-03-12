@@ -6,6 +6,8 @@ After=network.target
 Type=simple
 WorkingDirectory=/home/kevinlb/bin/emmie
 EnvironmentFile=/home/kevinlb/bin/emmie/.env
+# Set EMMIE_SHELL=graphical or EMMIE_SHELL=text in .env to choose the served shell.
+# You can also point gunicorn directly at server.wsgi_graphical:app or server.wsgi_text:app.
 ExecStart=/home/kevinlb/bin/emmie/.venv/bin/gunicorn --config /home/kevinlb/bin/emmie/deploy/gunicorn.conf.py server.wsgi:app
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
@@ -14,4 +16,3 @@ PrivateTmp=true
 
 [Install]
 WantedBy=default.target
-

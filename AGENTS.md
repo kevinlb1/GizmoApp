@@ -7,12 +7,13 @@
 4. If Git author identity is missing, prefer configuring a repo-local identity instead of changing global Git settings without explicit user direction.
 
 ## Project Intent
-- This repository is intended to become a blank graphical webapp scaffold.
+- This repository is intended to become a blank webapp scaffold with multiple frontend shell variants.
 - The app should render in a browser and support interaction on an Amazon Fire tablet, an Apple iPhone, and desktop Chrome on a PC.
 - The current priority is a clean, modifiable template rather than end-user functionality.
 - The interface should stay tablet-friendly while still performing well on desktop-class Chrome.
 - The app should remain anonymous and public for now, but the structure should not make later authentication work difficult.
 - The frontend should be installable as an app-like PWA, but offline support is not currently required.
+- The project should keep at least two blank shells in the same codebase: a graphical shell and a more standard text-first shell.
 
 ## Deployment Context
 - Development work happens in this repository: `/home/kevinlb/programming/emmie`.
@@ -32,6 +33,7 @@
 - Include a minimal backend API, a sample database schema, and a lightweight admin/health surface.
 - Provide a manual server install script for dependencies; do not make cron responsible for first-time machine setup.
 - Design deploy automation so it can fast-forward from git in user mode and reload `gunicorn` only when backend/runtime changes require it.
+- Keep shell variants sharing the same backend and deployment path where practical; selecting which shell is served should be a deployment choice, not a repo split.
 
 ## Safety Guidance
 - Do not push to the remote unless the user explicitly asks for it.

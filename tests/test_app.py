@@ -8,7 +8,7 @@ from server.emmie_server import create_app
 
 
 class EmmieAppTestCase(unittest.TestCase):
-    def make_app(self, url_prefix: str = ""):
+    def make_app(self, url_prefix: str = "", shell_variant: str = "graphical"):
         self.temp_dir = tempfile.TemporaryDirectory()
         db_path = Path(self.temp_dir.name) / "test.sqlite3"
         app = create_app(
@@ -17,7 +17,8 @@ class EmmieAppTestCase(unittest.TestCase):
                 "DB_PATH": db_path,
                 "URL_PREFIX": url_prefix,
                 "SECRET_KEY": "test-secret",
-            }
+            },
+            shell_variant=shell_variant,
         )
         return app
 
@@ -35,6 +36,7 @@ class EmmieAppTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(payload["app"]["urlPrefix"], "/AI100")
+        self.assertEqual(payload["app"]["shell"], "graphical")
         self.assertGreaterEqual(len(payload["sampleNodes"]), 3)
 
     def test_manifest_uses_configured_prefix(self):
@@ -69,7 +71,7 @@ class EmmieAppTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(payload["sampleNode"]["slug"], "new-node")
 
-    def test_index_renders_without_prefix(self):
+    def test_graphical_index_renders_without_prefix(self):
         app = self.make_app("")
         client = app.test_client()
 
@@ -78,6 +80,16 @@ class EmmieAppTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn("Interactive graphical scene", html)
+
+    def test_text_index_renders_without_prefix(self):
+        app = self.make_app("", shell_variant="text")
+        client = app.test_client()
+
+        response = client.get("/")
+        html = response.get_data(as_text=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Standard app layout, no product logic yet", html)
 
 
 if __name__ == "__main__":

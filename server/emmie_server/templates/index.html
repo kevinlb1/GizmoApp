@@ -19,8 +19,9 @@
     <div class="app-shell">
       <header class="topbar reveal">
         <div>
-          <p class="eyebrow">Graphical Template</p>
+          <p class="eyebrow">{{ shell_label }} Template</p>
           <h1>{{ app_name }}</h1>
+          <p class="shell-copy">{{ shell_description }}</p>
         </div>
         <div class="topbar-actions">
           <span class="health-pill" id="health-pill">Booting</span>
@@ -50,6 +51,10 @@
               <div>
                 <span class="label">Mode</span>
                 <strong id="mode-value">Public</strong>
+              </div>
+              <div>
+                <span class="label">Shell</span>
+                <strong id="shell-value">{{ shell_label }}</strong>
               </div>
               <div>
                 <span class="label">Prefix</span>
@@ -84,4 +89,3 @@
     <script type="module" src="{{ asset_base }}main.js"></script>
   </body>
 </html>
-
