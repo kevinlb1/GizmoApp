@@ -123,6 +123,8 @@ If machine dependencies are already installed and you only want to initialize th
 ./scripts/install_checkout.sh
 ```
 
+That script also normalizes `.env` to owner-only permissions so secrets do not stay world-readable on shared machines.
+
 ### Install a fork/template-derived app at `/name`
 
 After a derived repo exists on GitHub, install it onto the server with:
@@ -140,12 +142,13 @@ This script:
 - creates or updates `/home/kevinlb/bin/myapp`
 - checks out `origin/main`
 - writes `/home/kevinlb/bin/myapp/.env`
+- locks `/home/kevinlb/bin/myapp/.env` to owner-only permissions and safely quotes values such as app titles with spaces
 - picks a free local gunicorn port unless you specify `--port`
 - creates the virtualenv and installs Python dependencies
 - initializes the SQLite database
 - writes a user-level systemd service at `~/.config/systemd/user/myapp.service`
 - installs a once-per-minute cron entry for `scripts/deploy_from_git.sh`
-- generates an nginx location snippet at `/home/kevinlb/bin/myapp/var/generated/nginx-location.conf`
+- generates an nginx location snippet at `/home/kevinlb/bin/myapp/var/generated/nginx-location.conf`, including a redirect from `/myapp` to `/myapp/`
 
 The default public URL becomes `http://vickrey10.cs.ubc.ca/myapp/`.
 

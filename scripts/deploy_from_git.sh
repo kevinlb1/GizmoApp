@@ -2,13 +2,13 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ENV_HELPER="${ROOT_DIR}/scripts/envfile.py"
 cd "${ROOT_DIR}"
 
-if [[ -f "${ROOT_DIR}/.env" ]]; then
-  set -a
-  # shellcheck source=/dev/null
-  . "${ROOT_DIR}/.env"
-  set +a
+if [[ -f "${ENV_HELPER}" && -f "${ROOT_DIR}/.env" ]]; then
+  while IFS= read -r -d '' env_entry; do
+    export "${env_entry}"
+  done < <(python3 "${ENV_HELPER}" load "${ROOT_DIR}/.env")
 fi
 
 BRANCH="${GIZMOAPP_DEPLOY_BRANCH:-main}"

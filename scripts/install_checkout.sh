@@ -16,10 +16,16 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
 fi
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ENV_HELPER="${ROOT_DIR}/scripts/envfile.py"
 cd "${ROOT_DIR}"
 
 if [[ ! -f "${ROOT_DIR}/.env.example" ]]; then
   echo "Missing .env.example in ${ROOT_DIR}" >&2
+  exit 1
+fi
+
+if [[ ! -f "${ENV_HELPER}" ]]; then
+  echo "Missing ${ENV_HELPER}" >&2
   exit 1
 fi
 
@@ -28,10 +34,11 @@ if [[ ! -f "${ROOT_DIR}/.env" ]]; then
   echo "Created ${ROOT_DIR}/.env from .env.example. Review the values before starting gunicorn."
 fi
 
-set -a
-# shellcheck source=/dev/null
-. "${ROOT_DIR}/.env"
-set +a
+chmod 600 "${ROOT_DIR}/.env"
+
+while IFS= read -r -d '' env_entry; do
+  export "${env_entry}"
+done < <(python3 "${ENV_HELPER}" load "${ROOT_DIR}/.env")
 
 mkdir -p "${ROOT_DIR}/var/data" "${ROOT_DIR}/var/log"
 
@@ -55,4 +62,3 @@ echo "Next steps:"
 echo "  1. Review ${ROOT_DIR}/.env"
 echo "  2. Start or reload the gunicorn user service for this checkout"
 echo "  3. Ensure nginx routes traffic to the configured GIZMOAPP_URL_PREFIX and GIZMOAPP_PORT"
-
