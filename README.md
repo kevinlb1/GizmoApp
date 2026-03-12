@@ -86,6 +86,12 @@ To support that use case, keep these traits intact:
 - the backend remains shared and understandable
 - shell-specific UI stays isolated so future projects can keep one shell or both
 
+For template-derived apps, the intended workflow is:
+
+- complete a task
+- commit it with a descriptive message
+- push it so the deployment cron job can pick it up, unless the user explicitly wants to keep the work local
+
 ## API Surface
 
 - `GET /api/bootstrap` returns app metadata, health details, and the seeded sample nodes

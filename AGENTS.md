@@ -1,10 +1,11 @@
 # AGENTS.md
 
 ## Workflow Rules
-1. When a task is complete, `git commit` the changes with a descriptive commit message, but do not push.
-2. Update this `AGENTS.md` whenever a task changes important operational, deployment, workflow, or safety context.
-3. Prefer changes that make future Codex edits easy: keep structure explicit, keep files reasonably small, and avoid unnecessary complexity.
-4. If Git author identity is missing, prefer configuring a repo-local identity instead of changing global Git settings without explicit user direction.
+1. When a task is complete, `git commit` the changes with a descriptive commit message.
+2. For apps built from this template, `git push` completed work after committing unless the user explicitly wants the work kept local.
+3. Update this `AGENTS.md` whenever a task changes important operational, deployment, workflow, or safety context.
+4. Prefer changes that make future Codex edits easy: keep structure explicit, keep files reasonably small, and avoid unnecessary complexity.
+5. If Git author identity is missing, prefer configuring a repo-local identity instead of changing global Git settings without explicit user direction.
 
 ## Project Intent
 - This repository is intended to become a blank webapp scaffold with multiple frontend shell variants.
