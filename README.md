@@ -284,6 +284,48 @@ This script:
 
 The default public URL becomes `http://vickrey10.cs.ubc.ca/myapp/`.
 
+### Fastest server command for new GizmoApp-derived repos
+
+If you want a one-argument deployment command, use:
+
+```bash
+./scripts/deploy_gizmoapp_repo.sh git@github.com:YOUR_ACCOUNT/YOUR_REPO.git
+```
+
+That wrapper:
+
+- infers the app name from the repository name
+- checks the repo out under `/home/kevinlb/bin/<repo-name>`
+- serves it at `http://vickrey10.cs.ubc.ca/<repo-name>/`
+- defaults to the graphical shell
+- installs the per-minute git deploy cron job
+- registers the nginx route automatically if the one-time router bootstrap has been run
+
+For example:
+
+```bash
+./scripts/deploy_gizmoapp_repo.sh git@github.com:kevinlb1/GizmoAppKLB1.git
+```
+
+To make this easy to run from anywhere on the server, copy it once into `~/bin`:
+
+```bash
+install -m 755 /home/kevinlb/bin/GizmoApp/scripts/deploy_gizmoapp_repo.sh ~/bin/deploy-gizmoapp-repo
+```
+
+Then future installs become:
+
+```bash
+~/bin/deploy-gizmoapp-repo git@github.com:YOUR_ACCOUNT/YOUR_REPO.git
+```
+
+Optional overrides:
+
+```bash
+~/bin/deploy-gizmoapp-repo git@github.com:YOUR_ACCOUNT/YOUR_REPO.git --shell text
+~/bin/deploy-gizmoapp-repo git@github.com:YOUR_ACCOUNT/YOUR_REPO.git --branch develop
+```
+
 ### After running `install_deployment_instance.sh`
 
 1. Review `/home/kevinlb/bin/myapp/.env`.
