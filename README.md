@@ -136,6 +136,79 @@ After that one-time bootstrap, future `install_deployment_instance.sh` runs will
 copy each app's generated snippet into `/etc/nginx/gizmoapp-instances/<name>.conf`
 and reload nginx automatically.
 
+### Recommended nginx layout on `vickrey10.cs.ubc.ca`
+
+For long-term clarity, do not use an app-specific nginx filename such as
+`/etc/nginx/sites-enabled/ai100` as the permanent home for all path-based apps.
+Prefer this structure instead:
+
+- neutral host file:
+  - `/etc/nginx/sites-available/vickrey10`
+  - `/etc/nginx/sites-enabled/vickrey10`
+- one snippet per routed app:
+  - `/etc/nginx/gizmoapp-instances/AI100.conf`
+  - `/etc/nginx/gizmoapp-instances/gizmotest.conf`
+  - `/etc/nginx/gizmoapp-instances/myapp.conf`
+
+An example neutral host file is provided at `deploy/nginx-host.example.conf`.
+That file owns the host-level `server { ... }` block and includes
+`/etc/nginx/gizmoapp-instances/*.conf`.
+
+### Safe migration from `ai100` to a neutral `vickrey10` host file
+
+If the current live path `/AI100` is still served from an nginx file named
+`/etc/nginx/sites-enabled/ai100`, migrate in this order so `/AI100` keeps
+working throughout:
+
+1. Create the managed snippet directory once:
+
+```bash
+sudo install -d -m 755 /etc/nginx/gizmoapp-instances
+```
+
+2. Create `/etc/nginx/gizmoapp-instances/AI100.conf` containing the existing
+`/AI100` location block. If `~/bin/AI100` is based on this scaffold, you can
+reuse its generated snippet or match the existing live config exactly.
+
+3. Create a neutral host config file from `deploy/nginx-host.example.conf`, for example:
+
+```bash
+sudo cp /home/kevinlb/bin/GizmoApp/deploy/nginx-host.example.conf /etc/nginx/sites-available/vickrey10
+```
+
+4. Adjust the copied host file if needed for your host-level defaults, then enable it:
+
+```bash
+sudo ln -s /etc/nginx/sites-available/vickrey10 /etc/nginx/sites-enabled/vickrey10
+```
+
+5. Validate before removing the old file:
+
+```bash
+sudo nginx -t
+curl -I http://vickrey10.cs.ubc.ca/AI100/
+```
+
+6. Only after `/AI100/` still works through the new host file, disable the old
+app-named site file if it is no longer needed:
+
+```bash
+sudo rm /etc/nginx/sites-enabled/ai100
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+After that migration, run the one-time router bootstrap against the neutral host file:
+
+```bash
+cd /home/kevinlb/bin/GizmoApp
+./scripts/install_nginx_instance_router.sh \
+  --server-config /etc/nginx/sites-enabled/vickrey10
+```
+
+From that point on, future app installs can register themselves automatically
+without editing nginx by hand.
+
 ### Current-checkout install
 
 If the current checkout is itself the live deployment checkout, run:
