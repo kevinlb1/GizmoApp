@@ -18,6 +18,7 @@ The initial scaffold intentionally avoids Node and a frontend bundler. That keep
 - `server/` contains the Flask app, SQLite wiring, and HTML/CSS/JS assets
 - `scripts/` contains install, deploy, and asset-generation helpers
 - `deploy/` contains example `gunicorn`, `nginx`, and cron snippets
+- `deploy/non-scaffold-app-deployment.md` explains how existing non-GizmoApp apps should fit into the neutral nginx host layout
 - `tests/` contains API and routing smoke tests
 
 ## Deployment Model

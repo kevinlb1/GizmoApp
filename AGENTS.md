@@ -63,6 +63,7 @@
 - `deploy/gizmoapp-gunicorn.service.example`: example user service
 - `deploy/nginx-host.example.conf`: example neutral nginx host config that includes one snippet per path-based app
 - `deploy/nginx-location.example.conf`: example nginx location block
+- `deploy/non-scaffold-app-deployment.md`: instructions for apps such as `AI100` that are not managed by the GizmoApp scaffold
 - `deploy/user-crontab.example`: example once-per-minute deployment cron entry
 
 ## First Steps For A Fresh Session
@@ -91,6 +92,7 @@
 - Deployment scripts treat `.env` as shell-compatible configuration, not arbitrary shell code. Keep `.env` values compatible with `scripts/envfile.py`.
 - The intended low-friction production shape is: run the one-time nginx router bootstrap once, then let each future per-instance install register its own nginx snippet automatically.
 - Prefer a neutral host config file such as `/etc/nginx/sites-enabled/vickrey10`, not an app-named file such as `ai100`, as the long-term home for path-based routing.
+- Non-scaffold apps should usually keep their own runtime/service/deploy process and only share the neutral nginx host layout plus one snippet per app route.
 
 ## Operational Guidance
 - Treat deployment automation, cron configuration, and `gunicorn` reload behavior as important operational context and record notable changes here.
