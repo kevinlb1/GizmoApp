@@ -388,7 +388,11 @@ The example cron entry in `deploy/user-crontab.example` calls `scripts/deploy_fr
 
 If a pushed commit changes `deploy/app.env`, the deploy script restarts the user service so the new environment takes effect. This is the intended way to send settings such as shell changes to the server without manual SSH edits.
 
+The installed cron entry also exports `XDG_RUNTIME_DIR` and `DBUS_SESSION_BUS_ADDRESS` so `systemctl --user` can talk to the user systemd bus even when the deploy runs from cron.
+
 When you use `scripts/install_deployment_instance.sh`, the script installs a real cron entry for that specific checkout automatically unless you pass `--skip-cron`.
+
+If you have older app installs that were created before this cron hardening, re-run `scripts/install_deployment_instance.sh` for that app or update the crontab entry so it includes those two environment variables before calling `scripts/deploy_from_git.sh`.
 
 ### HTTPS and installability
 

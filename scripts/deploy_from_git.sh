@@ -6,6 +6,16 @@ ENV_HELPER="${ROOT_DIR}/scripts/envfile.py"
 SYNC_DEPLOY_ENV="${ROOT_DIR}/scripts/sync_deploy_env.sh"
 cd "${ROOT_DIR}"
 
+ensure_user_systemd_env() {
+  if [[ -z "${XDG_RUNTIME_DIR:-}" ]]; then
+    export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+  fi
+
+  if [[ -z "${DBUS_SESSION_BUS_ADDRESS:-}" && -S "${XDG_RUNTIME_DIR}/bus" ]]; then
+    export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"
+  fi
+}
+
 if [[ -f "${ENV_HELPER}" && -f "${ROOT_DIR}/.env" ]]; then
   while IFS= read -r -d '' env_entry; do
     export "${env_entry}"
@@ -90,10 +100,16 @@ if (( needs_reload == 0 && env_changed == 0 )); then
 fi
 
 if [[ -n "${GIZMOAPP_SYSTEMD_USER_SERVICE:-}" ]] && command -v systemctl >/dev/null 2>&1; then
+  ensure_user_systemd_env
+
   if (( env_changed != 0 )); then
-    systemctl --user restart "${GIZMOAPP_SYSTEMD_USER_SERVICE}"
-    echo "Restarted ${GIZMOAPP_SYSTEMD_USER_SERVICE} after applying deploy/app.env."
-    exit 0
+    if systemctl --user restart "${GIZMOAPP_SYSTEMD_USER_SERVICE}"; then
+      echo "Restarted ${GIZMOAPP_SYSTEMD_USER_SERVICE} after applying deploy/app.env."
+      exit 0
+    fi
+
+    echo "Failed to restart ${GIZMOAPP_SYSTEMD_USER_SERVICE} via systemctl --user." >&2
+    echo "Check XDG_RUNTIME_DIR and DBUS_SESSION_BUS_ADDRESS for cron-driven deploys." >&2
   fi
 
   if systemctl --user reload "${GIZMOAPP_SYSTEMD_USER_SERVICE}"; then
@@ -101,9 +117,13 @@ if [[ -n "${GIZMOAPP_SYSTEMD_USER_SERVICE:-}" ]] && command -v systemctl >/dev/n
     exit 0
   fi
 
-  systemctl --user restart "${GIZMOAPP_SYSTEMD_USER_SERVICE}"
-  echo "Restarted ${GIZMOAPP_SYSTEMD_USER_SERVICE}."
-  exit 0
+  if systemctl --user restart "${GIZMOAPP_SYSTEMD_USER_SERVICE}"; then
+    echo "Restarted ${GIZMOAPP_SYSTEMD_USER_SERVICE}."
+    exit 0
+  fi
+
+  echo "Failed to reload or restart ${GIZMOAPP_SYSTEMD_USER_SERVICE} via systemctl --user." >&2
+  echo "Check XDG_RUNTIME_DIR and DBUS_SESSION_BUS_ADDRESS for cron-driven deploys." >&2
 fi
 
 if [[ -n "${GIZMOAPP_GUNICORN_PID_FILE:-}" ]] && [[ -f "${GIZMOAPP_GUNICORN_PID_FILE}" ]]; then

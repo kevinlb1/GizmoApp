@@ -239,6 +239,7 @@ USER_SYSTEMD_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 SERVICE_FILE="${USER_SYSTEMD_DIR}/${SERVICE_NAME}"
 GENERATED_DIR="${APP_DIR}/var/generated"
 NGINX_SNIPPET="${GENERATED_DIR}/nginx-location.conf"
+USER_RUNTIME_DIR="/run/user/$(id -u)"
 
 if ! command -v git >/dev/null 2>&1 || ! command -v python3 >/dev/null 2>&1; then
   echo "git and python3 are required. Run ./scripts/install_machine_dependencies.sh first." >&2
@@ -363,7 +364,7 @@ if command -v loginctl >/dev/null 2>&1; then
   fi
 fi
 
-CRON_LINE="* * * * * cd ${APP_DIR} && ${APP_DIR}/scripts/deploy_from_git.sh >> ${APP_DIR}/var/log/deploy-cron.log 2>&1"
+CRON_LINE="* * * * * cd ${APP_DIR} && XDG_RUNTIME_DIR=${USER_RUNTIME_DIR} DBUS_SESSION_BUS_ADDRESS=unix:path=${USER_RUNTIME_DIR}/bus ${APP_DIR}/scripts/deploy_from_git.sh >> ${APP_DIR}/var/log/deploy-cron.log 2>&1"
 if (( SKIP_CRON == 0 )); then
   install_cron_entry "${CRON_LINE}"
 else

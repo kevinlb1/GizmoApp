@@ -112,6 +112,7 @@
 - Provide a manual server install script for dependencies; do not make cron responsible for first-time machine setup.
 - Design deploy automation so it can fast-forward from git in user mode and reload `gunicorn` only when backend/runtime changes require it.
 - A push to the app repository should be the normal way to send template-managed runtime changes to the server. Avoid requiring manual SSH edits for settings such as shell selection.
+- Cron-driven deploys that use `systemctl --user` need the user bus environment. Keep `XDG_RUNTIME_DIR` and `DBUS_SESSION_BUS_ADDRESS` wired into the installed cron entry and into any fallback reload logic.
 - Keep shell variants sharing the same backend and deployment path where practical; selecting which shell is served should be a deployment choice, not a repo split.
 - If dependencies, runtime commands, route prefixes, or deployment steps change, update `.env.example`, `README.md`, deploy examples, and this file together.
 - Prefer GitHub template-repository usage over forks when this codebase is being reused as a starting point for independent apps.
