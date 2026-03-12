@@ -15,10 +15,10 @@ dev:
 	$(VENV)/bin/python server/manage.py run-dev
 
 dev-graphical:
-	EMMIE_SHELL=graphical $(VENV)/bin/python server/manage.py run-dev --shell graphical
+	GIZMOAPP_SHELL=graphical $(VENV)/bin/python server/manage.py run-dev --shell graphical
 
 dev-text:
-	EMMIE_SHELL=text $(VENV)/bin/python server/manage.py run-dev --shell text
+	GIZMOAPP_SHELL=text $(VENV)/bin/python server/manage.py run-dev --shell text
 
 test:
 	$(VENV)/bin/python -m unittest discover -s tests -v

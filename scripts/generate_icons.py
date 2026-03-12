@@ -8,7 +8,7 @@ import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT_DIR = ROOT / "server" / "emmie_server" / "static" / "icons"
+OUTPUT_DIR = ROOT / "server" / "gizmoapp_server" / "static" / "icons"
 
 
 def _chunk(tag: bytes, data: bytes) -> bytes:
@@ -67,4 +67,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

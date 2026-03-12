@@ -1,3 +1,2 @@
 # Fast-forward the live checkout once per minute and reload gunicorn when required.
-* * * * * cd /home/kevinlb/bin/emmie && /home/kevinlb/bin/emmie/scripts/deploy_from_git.sh >> /home/kevinlb/bin/emmie/var/log/deploy-cron.log 2>&1
-
+* * * * * cd /home/kevinlb/bin/GizmoApp && /home/kevinlb/bin/GizmoApp/scripts/deploy_from_git.sh >> /home/kevinlb/bin/GizmoApp/var/log/deploy-cron.log 2>&1

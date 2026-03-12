@@ -28,6 +28,7 @@
 - Keep both shells viable unless the user explicitly asks to remove one.
 - Favor simple deployable implementations over introducing heavy tooling. The current frontend strategy is intentionally build-free.
 - When adding features, preserve the ability to run behind an nginx path prefix such as `/AI100`.
+- Treat this repository as a starter/template for future independent apps. Prefer design choices that make cloning and rebranding easy.
 
 ## Architecture Snapshot
 - Backend: Python `Flask`
@@ -36,28 +37,28 @@
   - `graphical`: canvas-first, touch-friendly, suitable for sprites/animation/richer visuals
   - `text`: standard application shell suitable for forms, lists, dashboards, and workflow UI
 - App selection:
-  - `server/wsgi.py` serves the shell chosen by `EMMIE_SHELL`
+  - `server/wsgi.py` serves the shell chosen by `GIZMOAPP_SHELL`
   - `server/wsgi_graphical.py` forces the graphical shell
   - `server/wsgi_text.py` forces the text shell
-- Deployment shape: `nginx` in front of `gunicorn`, with a live checkout at `/home/kevinlb/bin/emmie`
+- Deployment shape: `nginx` in front of `gunicorn`, with a live checkout typically at `/home/kevinlb/bin/GizmoApp`
 
 ## Key Files
 - `README.md`: human-readable setup and deployment instructions
-- `.env.example`: runtime settings template, including `EMMIE_SHELL` and `EMMIE_URL_PREFIX`
+- `.env.example`: runtime settings template, including `GIZMOAPP_SHELL` and `GIZMOAPP_URL_PREFIX`
 - `server/manage.py`: local management commands such as `init-db`, `describe`, and `run-dev`
-- `server/emmie_server/shells.py`: shell definitions and shell-specific metadata
-- `server/emmie_server/views.py`: page routes and shell/template selection
-- `server/emmie_server/api.py`: JSON API routes
-- `server/emmie_server/db.py`: SQLite schema, seeding, and DB helpers
+- `server/gizmoapp_server/shells.py`: shell definitions and shell-specific metadata
+- `server/gizmoapp_server/views.py`: page routes and shell/template selection
+- `server/gizmoapp_server/api.py`: JSON API routes
+- `server/gizmoapp_server/db.py`: SQLite schema, seeding, and DB helpers
 - `scripts/install_server.sh`: one-time server dependency/bootstrap script
 - `scripts/deploy_from_git.sh`: cron-friendly fast-forward deploy script
-- `deploy/emmie-gunicorn.service.example`: example user service
+- `deploy/gizmoapp-gunicorn.service.example`: example user service
 - `deploy/nginx-location.example.conf`: example nginx location block
 - `deploy/user-crontab.example`: example once-per-minute deployment cron entry
 
 ## First Steps For A Fresh Session
 - Read `AGENTS.md` and `README.md` before making architectural assumptions.
-- Check which shell is active or intended by inspecting `.env`, `EMMIE_SHELL`, or the gunicorn target.
+- Check which shell is active or intended by inspecting `.env`, `GIZMOAPP_SHELL`, or the gunicorn target.
 - If the user asks for a feature, decide first whether it belongs in the graphical shell, the text shell, or shared backend/API code.
 - Preserve deployability while editing: if runtime behavior, dependencies, routes, or operational steps change, update `README.md` and this file.
 - After completing work, run the relevant validation you can run locally and then commit without pushing.
@@ -69,9 +70,9 @@
 - Avoid requiring the user to understand internal framework details unless those details affect a decision they must make.
 
 ## Deployment Context
-- Development work happens in this repository: `/home/kevinlb/programming/emmie`.
-- The intended live checkout on the server is: `/home/kevinlb/bin/emmie`.
-- The git remote is expected to be: `git@github.com:kevinlb1/emmie.git`.
+- Development work happens in the current repository root. Do not assume the local checkout directory name is authoritative if the repo was renamed after cloning.
+- The intended live checkout on the server is: `/home/kevinlb/bin/GizmoApp`.
+- The canonical git remote after the GitHub rename is expected to be: `git@github.com:kevinlb1/GizmoApp.git`.
 - The public deployment target is: `vickrey10.cs.ubc.ca`.
 - `gunicorn` is already running on the target machine, with `nginx` in front of it.
 - The intended server automation is a once-per-minute cron job that fetches repository updates and deploys them when new commits are available.
@@ -88,21 +89,22 @@
 - Design deploy automation so it can fast-forward from git in user mode and reload `gunicorn` only when backend/runtime changes require it.
 - Keep shell variants sharing the same backend and deployment path where practical; selecting which shell is served should be a deployment choice, not a repo split.
 - If dependencies, runtime commands, route prefixes, or deployment steps change, update `.env.example`, `README.md`, deploy examples, and this file together.
+- Prefer GitHub template-repository usage over forks when this codebase is being reused as a starting point for independent apps.
 - Preserve the current simple mental model:
   - install once with `scripts/install_server.sh`
-  - choose shell with `EMMIE_SHELL`
+  - choose shell with `GIZMOAPP_SHELL`
   - serve with gunicorn
   - let cron run `scripts/deploy_from_git.sh`
 - Static asset changes generally do not require a gunicorn reload; Python code and templates generally do.
 
 ## Deployment Checklist
-- Server checkout should live at `/home/kevinlb/bin/emmie`.
+- Server checkout should live at `/home/kevinlb/bin/GizmoApp`.
 - Copy `.env.example` to `.env` on the server and set at least:
-  - `EMMIE_SHELL=graphical` or `EMMIE_SHELL=text`
-  - `EMMIE_URL_PREFIX` if the app is mounted under a prefix such as `/AI100`
-  - a real `EMMIE_SECRET_KEY`
+  - `GIZMOAPP_SHELL=graphical` or `GIZMOAPP_SHELL=text`
+  - `GIZMOAPP_URL_PREFIX` if the app is mounted under a prefix such as `/AI100`
+  - a real `GIZMOAPP_SECRET_KEY`
 - Run `./scripts/install_server.sh` manually after the initial clone or after major environment changes.
-- Configure gunicorn from `deploy/emmie-gunicorn.service.example`.
+- Configure gunicorn from `deploy/gizmoapp-gunicorn.service.example`.
 - Configure nginx from `deploy/nginx-location.example.conf`.
 - Configure the user cron job from `deploy/user-crontab.example`.
 - If the deployment shape changes, document the new exact steps in `README.md` and summarize them here.
@@ -112,6 +114,7 @@
 - Keep shell-specific UI code under the shell’s own template and static asset directory.
 - Avoid introducing a frontend build step unless the user explicitly wants the tradeoff.
 - Keep deployment automation understandable and inspectable by a future agent reading only this repo.
+- When adding starter-friendly functionality, keep rebranding effort low: avoid scattering project-name-specific strings through shared logic unless necessary.
 
 ## Safety Guidance
 - Do not push to the remote unless the user explicitly asks for it.

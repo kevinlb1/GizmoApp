@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import argparse
 
-from emmie_server import create_app
-from emmie_server.db import database_summary, initialize_database
-from emmie_server.shells import SHELL_DEFINITIONS
+from gizmoapp_server import create_app
+from gizmoapp_server.db import database_summary, initialize_database
+from gizmoapp_server.shells import SHELL_DEFINITIONS
 
 
 def build_parser() -> argparse.ArgumentParser:
     shell_choices = sorted(SHELL_DEFINITIONS.keys())
-    parser = argparse.ArgumentParser(description="Manage the Emmie server.")
+    parser = argparse.ArgumentParser(description="Manage the GizmoApp server.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     init_parser = subparsers.add_parser("init-db", help="Create tables and seed the sample rows.")

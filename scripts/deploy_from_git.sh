@@ -11,7 +11,7 @@ if [[ -f "${ROOT_DIR}/.env" ]]; then
   set +a
 fi
 
-BRANCH="${EMMIE_DEPLOY_BRANCH:-main}"
+BRANCH="${GIZMOAPP_DEPLOY_BRANCH:-main}"
 PYTHON_BIN="${ROOT_DIR}/.venv/bin/python"
 PIP_BIN="${ROOT_DIR}/.venv/bin/pip"
 CURRENT_HEAD="$(git rev-parse HEAD)"
@@ -60,7 +60,7 @@ needs_reload=0
 while IFS= read -r path; do
   [[ -z "${path}" ]] && continue
   case "${path}" in
-    AGENTS.md|README.md|.gitignore|.env.example|deploy/user-crontab.example|deploy/nginx-location.example.conf|server/emmie_server/static/*)
+    AGENTS.md|README.md|.gitignore|.env.example|deploy/user-crontab.example|deploy/nginx-location.example.conf|server/gizmoapp_server/static/*)
       ;;
     *)
       needs_reload=1
@@ -74,24 +74,23 @@ if (( needs_reload == 0 )); then
   exit 0
 fi
 
-if [[ -n "${EMMIE_SYSTEMD_USER_SERVICE:-}" ]] && command -v systemctl >/dev/null 2>&1; then
-  if systemctl --user reload "${EMMIE_SYSTEMD_USER_SERVICE}"; then
-    echo "Reloaded ${EMMIE_SYSTEMD_USER_SERVICE}."
+if [[ -n "${GIZMOAPP_SYSTEMD_USER_SERVICE:-}" ]] && command -v systemctl >/dev/null 2>&1; then
+  if systemctl --user reload "${GIZMOAPP_SYSTEMD_USER_SERVICE}"; then
+    echo "Reloaded ${GIZMOAPP_SYSTEMD_USER_SERVICE}."
     exit 0
   fi
 
-  systemctl --user restart "${EMMIE_SYSTEMD_USER_SERVICE}"
-  echo "Restarted ${EMMIE_SYSTEMD_USER_SERVICE}."
+  systemctl --user restart "${GIZMOAPP_SYSTEMD_USER_SERVICE}"
+  echo "Restarted ${GIZMOAPP_SYSTEMD_USER_SERVICE}."
   exit 0
 fi
 
-if [[ -n "${EMMIE_GUNICORN_PID_FILE:-}" ]] && [[ -f "${EMMIE_GUNICORN_PID_FILE}" ]]; then
-  kill -HUP "$(cat "${EMMIE_GUNICORN_PID_FILE}")"
+if [[ -n "${GIZMOAPP_GUNICORN_PID_FILE:-}" ]] && [[ -f "${GIZMOAPP_GUNICORN_PID_FILE}" ]]; then
+  kill -HUP "$(cat "${GIZMOAPP_GUNICORN_PID_FILE}")"
   echo "Reloaded gunicorn via PID file."
   exit 0
 fi
 
 echo "Deploy completed, but no gunicorn reload strategy is configured."
-echo "Set EMMIE_SYSTEMD_USER_SERVICE or EMMIE_GUNICORN_PID_FILE in .env."
+echo "Set GIZMOAPP_SYSTEMD_USER_SERVICE or GIZMOAPP_GUNICORN_PID_FILE in .env."
 exit 1
-

@@ -4,10 +4,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from server.emmie_server import create_app
+from server.gizmoapp_server import create_app
 
 
-class EmmieAppTestCase(unittest.TestCase):
+class GizmoAppTestCase(unittest.TestCase):
     def make_app(self, url_prefix: str = "", shell_variant: str = "graphical"):
         self.temp_dir = tempfile.TemporaryDirectory()
         db_path = Path(self.temp_dir.name) / "test.sqlite3"
