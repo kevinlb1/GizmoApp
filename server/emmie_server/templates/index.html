@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>{{ app_name }}</title>
+    <meta name="description" content="{{ app_tagline }}">
+    <meta name="theme-color" content="{{ theme_color }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="{{ app_name }}">
+    <base href="{{ base_href }}">
+    <link rel="manifest" href="{{ manifest_url }}">
+    <link rel="icon" href="{{ icon_url }}" sizes="192x192">
+    <link rel="apple-touch-icon" href="{{ apple_touch_icon_url }}">
+    <link rel="stylesheet" href="{{ asset_base }}styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar reveal">
+        <div>
+          <p class="eyebrow">Graphical Template</p>
+          <h1>{{ app_name }}</h1>
+        </div>
+        <div class="topbar-actions">
+          <span class="health-pill" id="health-pill">Booting</span>
+          <button class="install-button" id="install-button" hidden>Install app</button>
+          <a class="ghost-link" href="{{ admin_url }}">Admin</a>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="canvas-card reveal">
+          <canvas id="scene-canvas" aria-label="Interactive graphical scene"></canvas>
+          <div class="canvas-hud">
+            <span class="canvas-chip">Touch, drag, or click the scene</span>
+            <span class="canvas-chip dim">Blank surface ready for future sprites, UI, or 3D</span>
+          </div>
+        </section>
+
+        <aside class="panel-stack">
+          <section class="panel-card reveal">
+            <p class="eyebrow">Template Status</p>
+            <h2>Blank, but wired</h2>
+            <p class="body-copy">
+              The app already has a browser shell, canvas renderer, SQLite-backed API, PWA manifest,
+              and deploy scripts. Business logic can be added without replacing the scaffold.
+            </p>
+            <div class="info-grid">
+              <div>
+                <span class="label">Mode</span>
+                <strong id="mode-value">Public</strong>
+              </div>
+              <div>
+                <span class="label">Prefix</span>
+                <strong id="prefix-value">/</strong>
+              </div>
+              <div>
+                <span class="label">API</span>
+                <strong id="api-value">Connecting</strong>
+              </div>
+              <div>
+                <span class="label">Database</span>
+                <strong id="db-value">Connecting</strong>
+              </div>
+            </div>
+            <p class="support-copy" id="install-hint">
+              Install becomes available on supported browsers when the app is served over HTTPS.
+            </p>
+          </section>
+
+          <section class="panel-card reveal">
+            <p class="eyebrow">Sample Nodes</p>
+            <h2>SQLite Seed Data</h2>
+            <ul class="nodes-list" id="nodes-list">
+              <li class="node-row skeleton">Loading sample nodes…</li>
+            </ul>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <script id="emmie-config" type="application/json">{{ client_config | tojson }}</script>
+    <script type="module" src="{{ asset_base }}main.js"></script>
+  </body>
+</html>
+

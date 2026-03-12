@@ -1,0 +1,343 @@
+:root {
+  color-scheme: dark;
+  --bg-0: #0b141f;
+  --bg-1: #132033;
+  --bg-2: #23324c;
+  --panel: rgba(9, 18, 29, 0.76);
+  --panel-border: rgba(255, 255, 255, 0.09);
+  --text: #f8f2e7;
+  --muted: #b4c0ce;
+  --accent: #72d1c2;
+  --accent-warm: #f59a62;
+  --accent-soft: #f0cf87;
+  --shadow: 0 24px 60px rgba(1, 7, 16, 0.45);
+  --heading-font: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+  --body-font: "Avenir Next", "Gill Sans", "Trebuchet MS", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--body-font);
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(114, 209, 194, 0.24), transparent 32%),
+    radial-gradient(circle at 82% 18%, rgba(245, 154, 98, 0.22), transparent 28%),
+    linear-gradient(160deg, var(--bg-0), var(--bg-1) 48%, var(--bg-2));
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(circle at center, black, transparent 85%);
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: calc(env(safe-area-inset-top, 0px) + 1rem) calc(env(safe-area-inset-right, 0px) + 1rem)
+    calc(env(safe-area-inset-bottom, 0px) + 1.25rem) calc(env(safe-area-inset-left, 0px) + 1rem);
+  display: grid;
+  gap: 1rem;
+}
+
+.topbar,
+.topbar-actions,
+.info-grid,
+.node-row {
+  display: flex;
+  align-items: center;
+}
+
+.topbar {
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.topbar h1,
+.panel-card h2 {
+  margin: 0;
+  font-family: var(--heading-font);
+  letter-spacing: 0.01em;
+}
+
+.topbar h1 {
+  font-size: clamp(2rem, 4vw, 3.25rem);
+}
+
+.topbar-actions {
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.eyebrow,
+.label {
+  margin: 0 0 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.layout {
+  display: grid;
+  gap: 1rem;
+}
+
+.canvas-card,
+.panel-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--panel-border);
+  border-radius: 30px;
+  background: var(--panel);
+  backdrop-filter: blur(22px);
+  box-shadow: var(--shadow);
+}
+
+.canvas-card {
+  min-height: min(72vh, 760px);
+}
+
+#scene-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.canvas-hud {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  pointer-events: none;
+}
+
+.canvas-chip {
+  padding: 0.6rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(11, 20, 31, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  font-size: 0.9rem;
+}
+
+.canvas-chip.dim {
+  color: var(--muted);
+}
+
+.panel-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.panel-card {
+  padding: 1.2rem;
+}
+
+.body-copy,
+.support-copy {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.info-grid {
+  margin-top: 1.1rem;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.info-grid > div {
+  min-width: 7rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: grid;
+  gap: 0.25rem;
+}
+
+.info-grid strong {
+  font-size: 0.95rem;
+}
+
+.install-button,
+.ghost-link,
+.health-pill {
+  border-radius: 999px;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+
+.install-button,
+.ghost-link {
+  transition: transform 180ms ease, background-color 180ms ease, border-color 180ms ease;
+}
+
+.install-button {
+  border: 0;
+  cursor: pointer;
+  color: #08111a;
+  background: linear-gradient(135deg, var(--accent-soft), #f7b66e);
+  box-shadow: 0 12px 26px rgba(245, 154, 98, 0.24);
+}
+
+.install-button:hover,
+.ghost-link:hover {
+  transform: translateY(-1px);
+}
+
+.ghost-link {
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.health-pill {
+  background: rgba(114, 209, 194, 0.14);
+  border: 1px solid rgba(114, 209, 194, 0.32);
+  color: var(--accent);
+}
+
+.health-pill[data-state="degraded"] {
+  background: rgba(245, 154, 98, 0.14);
+  border-color: rgba(245, 154, 98, 0.3);
+  color: var(--accent-warm);
+}
+
+.nodes-list,
+.admin-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.node-row,
+.admin-list li {
+  padding: 0.9rem 1rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.055);
+}
+
+.node-row {
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.node-row.skeleton {
+  color: var(--muted);
+}
+
+.node-dot {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 999px;
+  box-shadow: 0 0 18px currentColor;
+  flex: 0 0 auto;
+}
+
+.node-copy {
+  flex: 1;
+}
+
+.node-copy strong,
+.node-copy span {
+  display: block;
+}
+
+.node-copy span {
+  margin-top: 0.25rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.node-meta {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.admin-body {
+  overflow-y: auto;
+}
+
+.admin-layout {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  align-items: start;
+}
+
+.reveal {
+  animation: rise 700ms cubic-bezier(0.18, 0.8, 0.18, 1) both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (min-width: 1000px) {
+  .layout {
+    grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.95fr);
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 999px) {
+  body {
+    overflow-y: auto;
+  }
+
+  .canvas-card {
+    min-height: 58vh;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-shell {
+    padding: calc(env(safe-area-inset-top, 0px) + 0.8rem) calc(env(safe-area-inset-right, 0px) + 0.8rem)
+      calc(env(safe-area-inset-bottom, 0px) + 0.9rem) calc(env(safe-area-inset-left, 0px) + 0.8rem);
+  }
+
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .topbar-actions {
+    justify-content: flex-start;
+  }
+
+  .panel-card,
+  .canvas-card {
+    border-radius: 24px;
+  }
+}
+

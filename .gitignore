@@ -1,0 +1,8 @@
+.env
+.python-deps/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+var/

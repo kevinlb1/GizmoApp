@@ -1,0 +1,17 @@
+[Unit]
+Description=Emmie gunicorn service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/kevinlb/bin/emmie
+EnvironmentFile=/home/kevinlb/bin/emmie/.env
+ExecStart=/home/kevinlb/bin/emmie/.venv/bin/gunicorn --config /home/kevinlb/bin/emmie/deploy/gunicorn.conf.py server.wsgi:app
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=3
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target
+
