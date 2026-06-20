@@ -6,11 +6,11 @@ import argparse
 
 from gizmoapp_server import create_app
 from gizmoapp_server.db import database_summary, initialize_database
-from gizmoapp_server.shells import SHELL_DEFINITIONS
+from gizmoapp_server.shells import available_shell_choices
 
 
 def build_parser() -> argparse.ArgumentParser:
-    shell_choices = sorted(SHELL_DEFINITIONS.keys())
+    shell_choices = available_shell_choices()
     parser = argparse.ArgumentParser(description="Manage the GizmoApp server.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 

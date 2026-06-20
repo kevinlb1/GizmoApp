@@ -67,11 +67,20 @@ make dev
 Or start a specific shell explicitly:
 
 ```bash
+make dev-auto
 make dev-graphical
 make dev-text
 ```
 
 The development commands now auto-read `deploy/app.env` and then a repo-root `.env`. The default app URL is `http://127.0.0.1:8001/` unless you set `GIZMOAPP_URL_PREFIX`, in which case the app lives under that prefix.
+
+Run the repo-standard validation entry point with:
+
+```bash
+make validate
+```
+
+The helper uses `.venv` when available and otherwise installs requirements into a repo-local fallback directory before running the Python unit tests.
 
 ## Shell Selection
 
@@ -81,7 +90,7 @@ The project keeps both blank shells in the same codebase and shares the same bac
 - `server/wsgi_text.py` serves the text-first shell
 - `server/wsgi.py` serves whichever shell is selected by `GIZMOAPP_SHELL`
 
-On the server, the simplest approach is to keep the gunicorn target at `server.wsgi:app` and set the default shell in `deploy/app.env`. The deploy scripts merge that tracked setting into the live `.env` and restart the service when it changes.
+On the server, the simplest approach is to keep the gunicorn target at `server.wsgi:app` and set the default shell in `deploy/app.env`. Use `GIZMOAPP_SHELL=auto` for agentic/template-derived workspaces. Auto mode inspects changed files in the checkout: text-shell template/assets select `text`, graphical template/assets select `graphical`, and mixed or unclear changes fall back to `graphical`. Use `GIZMOAPP_SHELL=graphical` or `GIZMOAPP_SHELL=text` only when you intentionally want to force one shell. The deploy scripts merge the tracked setting into the live `.env` and restart the service when it changes.
 
 ## Using This As A Starter
 
@@ -112,7 +121,7 @@ For deployed template-derived apps, prefer this split:
 - `deploy/app.env` is git-tracked and should hold non-secret runtime choices you want to reach the server through normal `git push` plus cron deploys
 - `.env` on the server is machine-specific and should hold secrets, ports, DB paths, service names, and per-instance URL prefixes
 
-For example, changing from the text shell to the graphical shell should normally mean editing `deploy/app.env`, committing, and pushing, not SSHing into the server to edit `.env`.
+For example, forcing a change from the text shell to the graphical shell should normally mean editing `deploy/app.env`, committing, and pushing, not SSHing into the server to edit `.env`.
 
 ## API Surface
 

@@ -40,6 +40,7 @@
   - `text`: standard application shell suitable for forms, lists, dashboards, and workflow UI
 - App selection:
   - `server/wsgi.py` serves the shell chosen by `GIZMOAPP_SHELL`
+  - `GIZMOAPP_SHELL=auto` chooses from changed shell-specific files and falls back to `graphical`
   - `server/wsgi_graphical.py` forces the graphical shell
   - `server/wsgi_text.py` forces the text shell
 - Deployment shape: `nginx` in front of `gunicorn`, with a live checkout typically at `/home/kevinlb/bin/GizmoApp`
@@ -75,10 +76,12 @@
 ## First Steps For A Fresh Session
 - Read `AGENTS.md`, `README.md`, and `docs/design-overview.md` before making architectural assumptions.
 - Check which shell is active or intended by inspecting `.env`, `GIZMOAPP_SHELL`, or the gunicorn target.
+- Prefer `GIZMOAPP_SHELL=auto` for agentic/student workspaces so the preview follows the shell-specific files that were changed.
 - For template-derived apps, prefer changing git-tracked runtime settings in `deploy/app.env` and pushing them, rather than SSHing into the server to edit `.env`.
 - If the user asks for a feature, decide first whether it belongs in the graphical shell, the text shell, or shared backend/API code.
 - Preserve deployability while editing: if runtime behavior, dependencies, routes, or operational steps change, update `README.md` and this file.
 - Keep local install artifacts and machine-specific files out of Git; update `.gitignore` when new ones appear.
+- Before saying validation is blocked by missing local Python packages, run `make validate`. That helper should reuse `.venv` when present or install repo-local fallback deps into `.pydeps/` and run the `unittest` suite without asking the user to intervene.
 - After completing work, run the relevant validation you can run locally and then commit without pushing.
 
 ## Non-Expert User Support
@@ -120,7 +123,7 @@
 - Preserve the current simple mental model:
   - install host packages once with `scripts/install_machine_dependencies.sh`
   - install a specific checkout with `scripts/install_checkout.sh` or `scripts/install_deployment_instance.sh`
-  - choose the git-tracked default shell with `deploy/app.env`
+  - choose the git-tracked default shell with `deploy/app.env`; use `auto` unless there is a clear reason to force `graphical` or `text`
   - serve with gunicorn
   - let cron run `scripts/deploy_from_git.sh`
 - Static asset changes generally do not require a gunicorn reload; Python code and templates generally do.

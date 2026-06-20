@@ -1,7 +1,7 @@
 PYTHON ?= python3
 VENV ?= .venv
 
-.PHONY: install init-db dev dev-graphical dev-text test generate-icons
+.PHONY: install init-db dev dev-auto dev-graphical dev-text test validate generate-icons
 
 install:
 	$(PYTHON) -m venv $(VENV)
@@ -14,6 +14,9 @@ init-db:
 dev:
 	$(VENV)/bin/python server/manage.py run-dev
 
+dev-auto:
+	GIZMOAPP_SHELL=auto $(VENV)/bin/python server/manage.py run-dev --shell auto
+
 dev-graphical:
 	GIZMOAPP_SHELL=graphical $(VENV)/bin/python server/manage.py run-dev --shell graphical
 
@@ -22,6 +25,9 @@ dev-text:
 
 test:
 	$(VENV)/bin/python -m unittest discover -s tests -v
+
+validate:
+	./scripts/run_local_validation.sh
 
 generate-icons:
 	$(PYTHON) scripts/generate_icons.py

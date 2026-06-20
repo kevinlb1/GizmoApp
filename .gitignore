@@ -1,5 +1,6 @@
 .env
 .python-deps/
+.pydeps/
 .venv/
 __pycache__/
 *.pyc

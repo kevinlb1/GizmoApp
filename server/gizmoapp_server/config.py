@@ -94,10 +94,10 @@ def load_settings(shell_variant: str | None = None, repo_root: Path | None = Non
             "Frontend is build-free by design to keep deploys easy.",
             "Touch-first layout takes priority over desktop polish.",
             "The project ships with both graphical and text-first frontend shells.",
-            "Select the active shell through GIZMOAPP_SHELL or an explicit WSGI entry point.",
+            "GIZMOAPP_SHELL=auto chooses the shell from changed files; graphical/text force a shell.",
         ],
     }
-    settings.update(shell_settings(shell_variant or os.getenv("GIZMOAPP_SHELL", DEFAULT_SHELL)))
+    settings.update(shell_settings(shell_variant or os.getenv("GIZMOAPP_SHELL", DEFAULT_SHELL), repo_root=repo_root))
     return settings
 
 

@@ -15,7 +15,7 @@ Options:
   --name NAME            URL path and checkout directory name, e.g. "todoapp"
   --repo-url URL         Git URL for the fork/template-derived repository
   --branch BRANCH        Git branch to deploy (default: main)
-  --shell SHELL          graphical or text fallback when deploy/app.env does not set GIZMOAPP_SHELL (default: graphical)
+  --shell SHELL          auto, graphical, or text fallback when deploy/app.env does not set GIZMOAPP_SHELL (default: auto)
   --app-title TITLE      Human-readable app title (default: NAME)
   --base-dir DIR         Parent directory for deployments (default: /home/kevinlb/bin)
   --domain DOMAIN        Public host name (default: vickrey10.cs.ubc.ca)
@@ -137,7 +137,7 @@ register_nginx_instance() {
 NAME=""
 REPO_URL=""
 BRANCH="main"
-SHELL_VARIANT="graphical"
+SHELL_VARIANT="auto"
 APP_TITLE=""
 BASE_DIR="/home/kevinlb/bin"
 DOMAIN="vickrey10.cs.ubc.ca"
@@ -220,10 +220,10 @@ if [[ ! "${NAME}" =~ ^[A-Za-z0-9_-]+$ ]]; then
 fi
 
 case "${SHELL_VARIANT}" in
-  graphical|text)
+  auto|graphical|text)
     ;;
   *)
-    echo "--shell must be graphical or text." >&2
+    echo "--shell must be auto, graphical, or text." >&2
     exit 1
     ;;
 esac

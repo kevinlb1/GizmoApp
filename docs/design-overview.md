@@ -49,6 +49,13 @@ The intended default for template-derived apps is to store the chosen shell in
 `deploy/app.env`, commit it, and push it. The deploy pipeline then applies that
 setting to the live service without requiring a manual SSH edit on the server.
 
+For agentic/student workspaces, the preferred value is `GIZMOAPP_SHELL=auto`.
+Auto mode inspects changed shell-specific files in the checkout. Text-shell
+template/assets select `text`, graphical template/assets select `graphical`,
+and mixed or unclear changes fall back to `graphical`. This keeps the served
+preview aligned with the files the coding agent actually edited while still
+allowing deployments to force `graphical` or `text` when needed.
+
 ## Routing And Prefix Design
 
 The scaffold is designed to run at either:
