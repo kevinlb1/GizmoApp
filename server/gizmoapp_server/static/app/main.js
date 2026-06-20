@@ -19,40 +19,11 @@ function setText(id, value) {
 
 function updateHealthPill(healthy) {
   const pill = document.getElementById("health-pill");
-  pill.dataset.state = healthy ? "healthy" : "degraded";
-  pill.textContent = healthy ? "Healthy" : "Degraded";
-}
-
-
-function renderNodes(nodes) {
-  const list = document.getElementById("nodes-list");
-  list.innerHTML = "";
-
-  for (const node of nodes) {
-    const item = document.createElement("li");
-    item.className = "node-row";
-
-    const dot = document.createElement("span");
-    dot.className = "node-dot";
-    dot.style.color = node.accent_color;
-    dot.style.background = node.accent_color;
-
-    const copy = document.createElement("span");
-    copy.className = "node-copy";
-
-    const label = document.createElement("strong");
-    label.textContent = node.label;
-    const description = document.createElement("span");
-    description.textContent = node.description;
-    copy.append(label, description);
-
-    const meta = document.createElement("span");
-    meta.className = "node-meta";
-    meta.textContent = node.slug;
-
-    item.append(dot, copy, meta);
-    list.appendChild(item);
+  if (!pill) {
+    return;
   }
+  pill.dataset.state = healthy ? "healthy" : "degraded";
+  pill.textContent = healthy ? "Ready" : "Offline";
 }
 
 
@@ -71,7 +42,7 @@ function registerServiceWorker(url) {
 
 async function bootstrap() {
   const config = readConfig();
-  const renderer = new SceneRenderer(document.getElementById("scene-canvas"));
+  new SceneRenderer(document.getElementById("scene-canvas"));
 
   setupInstallControls({
     button: document.getElementById("install-button"),
@@ -84,8 +55,6 @@ async function bootstrap() {
 
   try {
     const payload = await fetchBootstrap(config.apiBase);
-    renderNodes(payload.sampleNodes);
-    renderer.setNodes(payload.sampleNodes);
     setText("mode-value", payload.app.mode);
     setText("shell-value", payload.app.shellLabel);
     setText("api-value", "Online");

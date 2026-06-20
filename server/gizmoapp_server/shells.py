@@ -22,20 +22,20 @@ SHELL_DEFINITIONS = {
     "graphical": {
         "slug": "graphical",
         "label": "Graphical",
-        "description": "Touch-first graphical shell with a canvas scene ready for sprites, animation, or future 3D.",
+        "description": "Blank light canvas shell ready for sprites, animation, or future 3D.",
         "template": "index.html",
         "asset_subpath": "app/",
-        "theme_color": "#132033",
-        "background_color": "#132033",
+        "theme_color": "#eef7ff",
+        "background_color": "#eef7ff",
     },
     "text": {
         "slug": "text",
         "label": "Text",
-        "description": "Standard text-first shell with dashboard panels, lists, and forms ready for application flows.",
+        "description": "Blank text-first shell ready for forms, lists, dashboards, or workflows.",
         "template": "index_text.html",
         "asset_subpath": "app/text/",
-        "theme_color": "#15443f",
-        "background_color": "#f4efe4",
+        "theme_color": "#f8fafc",
+        "background_color": "#f8fafc",
     },
 }
 

@@ -4,8 +4,8 @@ GizmoApp is a blank webapp template repository intended to be easy for later Cod
 
 - A Python `Flask` backend that serves both the app shell and JSON API
 - A lightweight SQLite data store with a sample table and seed rows
-- A touch-friendly graphical shell with a canvas-driven scene
-- A more standard text-first application shell
+- A touch-friendly graphical shell with a blank, light canvas
+- A minimal text-first shell with a blank workspace area
 - Deployment examples for `nginx` in front of `gunicorn`
 - A cron-friendly deploy script that fast-forwards from `main` and reloads `gunicorn` only when runtime changes require it
 
@@ -337,7 +337,7 @@ That wrapper:
 - infers the app name from the repository name
 - checks the repo out under `/home/kevinlb/bin/<repo-name>`
 - serves it at `http://vickrey10.cs.ubc.ca/<repo-name>/`
-- uses the shell declared in `deploy/app.env`, or falls back to graphical if that file does not set one
+- uses the shell declared in `deploy/app.env`, or falls back to `auto` if that file does not set one
 - installs the per-minute git deploy cron job
 - registers the nginx route automatically if the one-time router bootstrap has been run
 

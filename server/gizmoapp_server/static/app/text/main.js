@@ -18,31 +18,11 @@ function setText(id, value) {
 
 function updateHealthPill(healthy) {
   const pill = document.getElementById("text-health-pill");
-  pill.dataset.state = healthy ? "healthy" : "degraded";
-  pill.textContent = healthy ? "Healthy" : "Degraded";
-}
-
-
-function renderRows(nodes) {
-  const rows = document.getElementById("nodes-list");
-  rows.innerHTML = "";
-
-  for (const node of nodes) {
-    const row = document.createElement("div");
-    row.className = "table-row";
-
-    const label = document.createElement("span");
-    label.textContent = node.label;
-
-    const slug = document.createElement("span");
-    slug.textContent = node.slug;
-
-    const position = document.createElement("span");
-    position.textContent = `${node.x.toFixed(2)}, ${node.y.toFixed(2)}`;
-
-    row.append(label, slug, position);
-    rows.appendChild(row);
+  if (!pill) {
+    return;
   }
+  pill.dataset.state = healthy ? "healthy" : "degraded";
+  pill.textContent = healthy ? "Ready" : "Offline";
 }
 
 
@@ -72,14 +52,13 @@ async function bootstrap() {
 
   try {
     const payload = await fetchBootstrap(config.apiBase);
-    renderRows(payload.sampleNodes);
     setText("mode-value", payload.app.mode);
     setText("shell-value", payload.app.shellLabel);
     setText("db-value", payload.health.database);
     updateHealthPill(payload.health.status === "ok");
   } catch (error) {
     console.error(error);
-    setText("db-value", "Error");
+    setText("db-value", "Unknown");
     updateHealthPill(false);
   }
 }

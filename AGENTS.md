@@ -16,6 +16,7 @@
 - The app should remain anonymous and public for now, but the structure should not make later authentication work difficult.
 - The frontend should be installable as an app-like PWA, but offline support is not currently required.
 - The project should keep at least two blank shells in the same codebase: a graphical shell and a more standard text-first shell.
+- Default shells should stay blank and light enough for future visual work to be readable. Do not seed the starter with a busy demo scene, fish tank, flock, dashboard, sample table, or workflow mockup unless the user explicitly asks for that app content.
 - A core purpose of this repository is to let a future Codex session start from near-zero context and still build, explain, and deploy a useful web app for a non-expert user.
 
 ## Primary Objective

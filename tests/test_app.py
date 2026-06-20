@@ -79,7 +79,7 @@ class GizmoAppTestCase(unittest.TestCase):
         html = response.get_data(as_text=True)
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn("Interactive graphical scene", html)
+        self.assertIn("Blank interactive canvas", html)
 
     def test_text_index_renders_without_prefix(self):
         app = self.make_app("", shell_variant="text")
@@ -89,7 +89,7 @@ class GizmoAppTestCase(unittest.TestCase):
         html = response.get_data(as_text=True)
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn("Standard app layout, no product logic yet", html)
+        self.assertIn("Blank text workspace", html)
 
 
 if __name__ == "__main__":
