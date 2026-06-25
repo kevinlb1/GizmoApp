@@ -18,11 +18,13 @@ When this repo is cloned inside CodingWorkspace and the student asks for a visua
    - `server/gizmoapp_server/static/app/main.js`
    - `server/gizmoapp_server/static/app/scene.js`
    - `server/gizmoapp_server/static/app/styles.css`
-2. Build the requested subject as one or a few bitmap sprites. Use an offscreen `<canvas>` texture or small generated PNG/WebP asset, then render it with `drawImage`. It is fine to use gradients, noise, shadows, ellipses, and lines inside the offscreen texture generator; avoid drawing the final scene as dozens of overlapping top-level polygons/ellipses/lines.
-3. Add simple HTML controls such as sliders, color inputs, or buttons in `index.html`, wire them in `main.js`, and expose a small renderer method such as `scene.setParameters(...)`.
-4. Keep the turn bounded. Do not spend the whole turn reading deployment docs, nginx/cron scripts, optional capability modules, or visual verification internals unless the student request specifically needs them.
-5. Validate with `make validate` when available. Run `ALLOW_BROWSER_CHECK=1 make visual-check` only if browser tooling is already available and permitted. Do not run `make visual-install` automatically; if screenshots are blocked, report that blocker clearly.
-6. Before finishing, check `git status --short`. A visual-app turn should leave a real code change or a clear blocker, not only notes about what you inspected. Hosted CodingWorkspace agents should commit locally when the platform asks for that, but must not push.
+2. Build the requested subject as one or a few image sprites. For realistic animals, people, products, or other art-quality subjects, prefer a generated or supplied PNG/WebP asset checked into `server/gizmoapp_server/static/app/assets/`, then render it with `drawImage`. Use an offscreen `<canvas>` procedural texture only as a fallback when no image-generation tool or asset is available.
+3. Do not build a realistic finished subject from many visible canvas ellipses, polygons, or lines. It is acceptable to use gradients, noise, shadows, ellipses, and lines inside a hidden offscreen texture generator, but if the final visible result still looks like stacked primitives, switch strategies or report the image-asset blocker.
+4. Use SVG/vector graphics for deliberately stylized icons, diagrams, simple characters, or deformable rigs. Do not try to create photorealistic vector art by piling up many SVG/canvas primitives. For clean resize plus simple deformation, prefer a hybrid: a high-quality bitmap sprite for appearance plus a small vector control/mask layer for adjustable pose or proportions.
+5. Add simple HTML controls such as sliders, color inputs, or buttons in `index.html`, wire them in `main.js`, and expose a small renderer method such as `scene.setParameters(...)`.
+6. Keep the turn bounded. Do not spend the whole turn reading deployment docs, nginx/cron scripts, optional capability modules, or visual verification internals unless the student request specifically needs them.
+7. Validate with `make validate` when available. Run `ALLOW_BROWSER_CHECK=1 make visual-check` only if browser tooling is already available and permitted. Do not run `make visual-install` automatically; if screenshots are blocked, report that blocker clearly.
+8. Before finishing, check `git status --short`. A visual-app turn should leave a real code change or a clear blocker, not only notes about what you inspected. Hosted CodingWorkspace agents should commit locally when the platform asks for that, but must not push.
 
 ## Agent Orientation
 
@@ -39,6 +41,7 @@ Use `docs/agent-map.md` as the routing document for future coding agents. It exp
 - Default shells should stay light enough for future visual work to be readable. Do not seed the starter with a busy demo scene, fish tank, flock, dashboard, sample table, or workflow mockup unless the user explicitly asks for that app content.
 - The initial app render must stay genuinely blank: no seeded dots, no map/geography language, and no visible database/path/runtime diagnostics outside admin-oriented surfaces.
 - The graphical shell must be sprite/bitmap-first by default, not primitive-shape-first. Preserve support for layered sprites, generated or loaded bitmap textures, and future renderer swaps; use direct canvas polygons/ellipses mainly for hit areas, debug overlays, masks, or intentionally simple vector marks.
+- High-quality realistic visuals should come from generated or supplied image assets where possible. Procedural canvas drawing is acceptable for textures, placeholders, and intentionally stylized work, but not as the default way to fake photoreal animals or people.
 - A core purpose of this repository is to let a future Codex session start from near-zero context and still build, explain, and deploy a useful web app for a non-expert user.
 
 ## Primary Objective

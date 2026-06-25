@@ -57,25 +57,40 @@ debugging, masks, hit areas, or explicitly vector-styled work. For finished
 graphics, prefer sprite sheets, generated bitmap textures, loaded PNG/WebP
 assets, or image-generated sprite bitmaps.
 
-Codex can produce sprite bitmaps when an image-generation tool is available. In
-coding-only environments, prefer procedural bitmap textures or small generated
-PNG assets checked into the repo when the asset should be durable.
+Codex can produce sprite bitmaps when an image-generation tool is available.
+Use that path first for realistic animals, people, products, or other
+art-quality subjects. Put durable generated assets under
+`server/gizmoapp_server/static/app/assets/` and load them as sprites. In
+CodingWorkspace-hosted OpenCode turns, image generation may not yet be exposed;
+if it is unavailable, say so clearly and build an asset slot or simple stylized
+placeholder instead of faking realism with many visible primitive shapes.
+
+SVG/vector graphics are best for intentionally stylized icons, diagrams,
+simple characters, and small deformable rigs. They resize cleanly, but
+photorealistic vector art generated from traces or many hand-coded paths is
+usually large, brittle, and hard for a small coding model to edit well. For
+realistic subjects that also need parameter controls, prefer a hybrid: a
+high-resolution bitmap sprite for appearance, plus a lightweight vector mask,
+skeleton, or control overlay for pose/proportion changes.
 
 For small hosted models, use this bounded recipe for rich visual subjects:
 
-1. Put the main subject in `scene.js` as an offscreen texture function, for
-   example `createHedgehogTexture(params)`, returning a canvas or image.
-2. Compose the texture at a higher internal resolution with gradients, noise,
-   shadows, soft edges, and a few carefully placed paths. The final scene should
-   draw the composed subject with `drawImage`, not rebuild it every frame from a
-   pile of visible top-level primitives.
-3. Keep parameters explicit and few at first, such as quill length, snout
+1. If an image asset is available or can be generated, put it under
+   `static/app/assets/`, load it once, and draw it with `drawImage`.
+2. If no asset is available, put the main subject in `scene.js` as an offscreen
+   texture function, for example `createHedgehogTexture(params)`, returning a
+   canvas or image.
+3. Compose fallback procedural textures at a higher internal resolution with
+   gradients, noise, shadows, soft edges, and a few carefully placed paths. The
+   final scene should draw the composed subject with `drawImage`, not rebuild it
+   every frame from a pile of visible top-level primitives.
+4. Keep parameters explicit and few at first, such as quill length, snout
    length, eye size, color, pose, or count. Add controls in `index.html`, read
    them in `main.js`, and pass them to the renderer through one method.
-4. Make a visible first version before exploring optional libraries, backend
+5. Make a visible first version before exploring optional libraries, backend
    capabilities, deployment scripts, or visual-verification implementation
    details.
-5. If browser screenshots are not already available, do not block the whole turn
+6. If browser screenshots are not already available, do not block the whole turn
    on installing them. Run static/unit validation, check `git status --short`,
    and clearly say that screenshot verification was blocked.
 

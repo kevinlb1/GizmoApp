@@ -20,12 +20,25 @@ Choose the shell first:
 For hosted CodingWorkspace visual requests, do this first:
 
 1. Edit the graphical shell files listed above.
-2. Put the main subject in `scene.js` as one or a few offscreen bitmap textures
-   or loaded image sprites.
-3. Render the composed subject with `drawImage`.
-4. Add a few direct controls in `index.html`, wire them in `main.js`, and expose
+2. If the request asks for a realistic animal, person, product, or other
+   art-quality subject, use a supplied or generated PNG/WebP sprite when an
+   image-generation tool or asset is available. Put durable assets under
+   `server/gizmoapp_server/static/app/assets/`.
+3. If no image asset source is available, make that blocker explicit and create
+   an asset slot or simple stylized placeholder. Do not fake realism with dozens
+   of visible ellipses, polygons, and lines.
+4. Put the main subject in `scene.js` as one or a few loaded image sprites or
+   offscreen bitmap textures.
+5. Render the composed subject with `drawImage`.
+6. Add a few direct controls in `index.html`, wire them in `main.js`, and expose
    one renderer update method.
-5. Run `make validate`.
+7. Run `make validate`.
+
+Use SVG/vector graphics only when the requested style is deliberately stylized
+or when a simple deformable rig is more important than photoreal appearance.
+Do not make a photoreal subject by stacking many SVG/canvas primitives. For
+clean resize plus limited deformation, use a hybrid: high-resolution bitmap
+sprite for the artwork, vector masks/handles for pose or parameter controls.
 
 Only open `scripts/visual_verify.py`, `server/requirements-visual.txt`, or the
 Playwright report internals if screenshot verification is already available and
