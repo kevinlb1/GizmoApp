@@ -22,6 +22,7 @@ The scaffold intentionally avoids Node and a frontend bundler. That keeps deploy
 - `scripts/` contains install, deploy, and asset-generation helpers
 - `deploy/` contains example `gunicorn`, `nginx`, and cron snippets
 - `docs/design-overview.md` records the intended architecture, config split, and deployment model
+- `docs/agent-map.md` is the short routing guide for coding agents so they can open only the files relevant to the current task
 - `docs/agent-extension-guide.md` gives future coding agents concrete extension rules
 - `deploy/app.env` contains git-tracked deployment settings that should reach the server only through an explicitly requested push/deploy flow
 - `deploy/non-scaffold-app-deployment.md` explains how existing non-GizmoApp apps should fit into the neutral nginx host layout

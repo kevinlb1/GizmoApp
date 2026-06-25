@@ -24,6 +24,10 @@ When this repo is cloned inside CodingWorkspace and the student asks for a visua
 5. Validate with `make validate` when available. Run `ALLOW_BROWSER_CHECK=1 make visual-check` only if browser tooling is already available and permitted. Do not run `make visual-install` automatically; if screenshots are blocked, report that blocker clearly.
 6. Before finishing, check `git status --short`. A visual-app turn should leave a real code change or a clear blocker, not only notes about what you inspected. Hosted CodingWorkspace agents should commit locally when the platform asks for that, but must not push.
 
+## Agent Orientation
+
+Use `docs/agent-map.md` as the routing document for future coding agents. It explains which files matter for common task types and which deployment, capability, or visual-verification files should be skipped unless the current request needs them.
+
 ## Project Intent
 - This repository is intended to become a blank webapp scaffold with multiple frontend shell variants.
 - The app should render in a browser and support interaction on an Amazon Fire tablet, an Apple iPhone, and desktop Chrome on a PC.
@@ -104,7 +108,7 @@ When this repo is cloned inside CodingWorkspace and the student asks for a visua
 - `deploy/user-crontab.example`: example once-per-minute deployment cron entry
 
 ## First Steps For A Fresh Session
-- Read `AGENTS.md`, `README.md`, and `docs/design-overview.md` before making architectural assumptions.
+- Read `AGENTS.md` and `docs/agent-map.md` before making architectural assumptions. Then read only the narrower docs or source files that match the current task. Do not read `README.md`, `docs/design-overview.md`, deployment scripts, or optional capability modules in detail unless the task needs them.
 - Check which shell is active or intended by inspecting `.env`, `GIZMOAPP_SHELL`, or the gunicorn target.
 - Prefer `GIZMOAPP_SHELL=auto` for agentic/student workspaces so the preview follows the shell-specific files that were changed.
 - For template-derived apps, prefer changing git-tracked runtime settings in `deploy/app.env`; push or deploy only when the user explicitly asks for that in the current turn.

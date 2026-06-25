@@ -3,6 +3,9 @@
 This repo is meant to answer common setup questions before a future coding agent
 has to ask them.
 
+If you are deciding where to start, read `docs/agent-map.md` first. This guide
+is for task-specific details after the map points you here.
+
 ## Default Stack
 
 - Backend: Flask in `server/gizmoapp_server/`
