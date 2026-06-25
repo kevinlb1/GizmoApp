@@ -13,27 +13,31 @@
     <link rel="manifest" href="{{ manifest_url }}">
     <link rel="icon" href="{{ icon_url }}" sizes="192x192">
     <link rel="apple-touch-icon" href="{{ apple_touch_icon_url }}">
+    <link rel="stylesheet" href="{{ shared_asset_base }}base.css">
     <link rel="stylesheet" href="{{ asset_base }}styles.css">
   </head>
-  <body>
-    <div class="app-shell">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">{{ shell_label }} shell</p>
+  <body class="shell-body graphical-body">
+    <div class="app-frame graphical-frame">
+      <header class="app-topbar">
+        <a class="brand-mark" href="{{ base_href }}" aria-label="{{ app_name }} home">G</a>
+        <div class="brand-copy">
+          <p class="shell-kicker">{{ shell_label }}</p>
           <h1>{{ app_name }}</h1>
         </div>
-        <div class="topbar-actions" aria-label="App status">
-          <span class="health-pill" id="health-pill">Booting</span>
-          <span class="status-chip">DB <strong id="db-value">...</strong></span>
-          <span class="status-chip">Path <strong id="prefix-value">/</strong></span>
-          <button class="install-button" id="install-button" hidden>Install</button>
-          <a class="ghost-link" href="{{ admin_url }}">Admin</a>
-        </div>
+        <nav class="app-actions" aria-label="App controls">
+          <span class="connection-indicator" id="health-pill" data-state="booting">Booting</span>
+          <button class="command-button" id="install-button" hidden>Install</button>
+          <a class="command-button" href="{{ admin_url }}">Admin</a>
+        </nav>
       </header>
 
-      <main class="blank-stage" aria-label="Blank graphical workspace">
-        <canvas id="scene-canvas" aria-label="Blank interactive canvas"></canvas>
-        <p class="stage-note">Blank canvas</p>
+      <main class="graphics-workspace" aria-label="Graphical workspace">
+        <canvas id="scene-canvas" aria-label="Graphical canvas"></canvas>
+        <section class="runtime-strip" aria-label="Runtime status">
+          <span>DB <strong id="db-value">...</strong></span>
+          <span>Path <strong id="prefix-value">/</strong></span>
+          <span>Map <strong id="location-value">UBC Vancouver</strong></span>
+        </section>
       </main>
     </div>
 

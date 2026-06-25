@@ -4,19 +4,21 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>{{ app_name }} Admin</title>
+    <link rel="stylesheet" href="{{ root_path }}app/base.css">
     <link rel="stylesheet" href="{{ root_path }}app/styles.css">
   </head>
   <body class="admin-body">
-    <div class="app-shell">
-      <header class="topbar reveal">
-        <div>
-          <p class="eyebrow">Admin Surface</p>
+    <div class="app-frame">
+      <header class="app-topbar">
+        <a class="brand-mark" href="{{ root_path }}" aria-label="{{ app_name }} home">G</a>
+        <div class="brand-copy">
+          <p class="shell-kicker">Admin</p>
           <h1>{{ app_name }}</h1>
           <p class="shell-copy">Active shell: {{ shell_label }} ({{ shell_variant }})</p>
         </div>
-        <div class="topbar-actions">
-          <a class="ghost-link" href="{{ root_path }}">Back to app</a>
-        </div>
+        <nav class="app-actions" aria-label="Admin controls">
+          <a class="command-button" href="{{ root_path }}">App</a>
+        </nav>
       </header>
 
       <main class="layout admin-layout">
@@ -31,6 +33,18 @@
             <div>
               <span class="label">Sample nodes</span>
               <strong>{{ summary.sample_node_count }}</strong>
+            </div>
+            <div>
+              <span class="label">State records</span>
+              <strong>{{ summary.app_state_count }}</strong>
+            </div>
+            <div>
+              <span class="label">Events</span>
+              <strong>{{ summary.app_event_count }}</strong>
+            </div>
+            <div>
+              <span class="label">Schema</span>
+              <strong>{{ summary.schema_version }}</strong>
             </div>
             <div>
               <span class="label">Root path</span>

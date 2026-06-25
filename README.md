@@ -3,22 +3,26 @@
 GizmoApp is a blank webapp template repository intended to be easy for later Codex edits. It ships with:
 
 - A Python `Flask` backend that serves both the app shell and JSON API
-- A lightweight SQLite data store with a sample table and seed rows
-- A touch-friendly graphical shell with a blank, light canvas
-- A minimal text-first shell with a blank workspace area
+- A lightweight SQLite data store with migrations, app state tables, and sample rows
+- A touch-friendly graphical shell with a layered canvas renderer for sprites and bitmap textures
+- A minimal text-first shell with the same responsive app frame
+- Lazy capability APIs for audio analysis, search, optimization, mapping, and optional machine learning
 - Deployment examples for `nginx` in front of `gunicorn`
 - A cron-friendly deploy script that fast-forwards from `main` and reloads `gunicorn` only when runtime changes require it
 
 ## Why No Frontend Build Step
 
-The initial scaffold intentionally avoids Node and a frontend bundler. That keeps deployment and future edits simpler while still leaving room for richer rendering later. The frontend is split into small modules, and the canvas renderer is isolated so a future change can swap in PixiJS, Three.js, or another engine without restructuring the backend.
+The scaffold intentionally avoids Node and a frontend bundler. That keeps deployment and future edits simpler while still leaving room for richer rendering later. The frontend is split into small modules, and the canvas renderer already supports layered sprites and bitmap textures so a future change can add PixiJS, Three.js, map tiles, or generated image assets without restructuring the backend.
 
 ## Repository Layout
 
 - `server/` contains the Flask app, SQLite wiring, and HTML/CSS/JS assets
+- `server/gizmoapp_server/capabilities/` contains lazy backend integrations for audio, search, optimization, OpenStreetMap, and optional scikit-learn
+- `server/gizmoapp_server/static/app/capabilities/` contains optional frontend helpers that are not imported by default
 - `scripts/` contains install, deploy, and asset-generation helpers
 - `deploy/` contains example `gunicorn`, `nginx`, and cron snippets
 - `docs/design-overview.md` records the intended architecture, config split, and deployment model
+- `docs/agent-extension-guide.md` gives future coding agents concrete extension rules
 - `deploy/app.env` contains git-tracked deployment settings that should reach the server through normal pushes
 - `deploy/non-scaffold-app-deployment.md` explains how existing non-GizmoApp apps should fit into the neutral nginx host layout
 - `tests/` contains API and routing smoke tests
@@ -82,6 +86,12 @@ make validate
 
 The helper uses `.venv` when available and otherwise installs requirements into a repo-local fallback directory before running the Python unit tests.
 
+Machine-learning features should install the optional scikit-learn dependency only when an app actually needs ML:
+
+```bash
+.venv/bin/pip install -r server/requirements-ml.txt
+```
+
 ## Shell Selection
 
 The project keeps both blank shells in the same codebase and shares the same backend, API, database, and deployment scripts.
@@ -126,6 +136,13 @@ For example, forcing a change from the text shell to the graphical shell should 
 ## API Surface
 
 - `GET /api/bootstrap` returns app metadata, health details, and the seeded sample nodes
+- `GET /api/capabilities` returns available capability modules and optional dependency status
+- `GET /api/search?q=...` searches persisted sample records in SQLite
+- `GET /api/map/default` returns OpenStreetMap settings and the default UBC Vancouver location
+- `GET /api/ml/status` reports whether scikit-learn is installed
+- `POST /api/ml/kmeans` runs a small scikit-learn KMeans job when ML dependencies are installed
+- `POST /api/optimize/route` runs a simple route ordering optimization
+- `POST /api/audio/analyze` summarizes browser-captured sample arrays
 - `GET /api/sample-nodes` lists the sample rows from SQLite
 - `POST /api/sample-nodes` inserts a sample row for future experimentation
 - `GET /healthz` returns a simple JSON health response

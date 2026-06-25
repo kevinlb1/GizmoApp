@@ -22,6 +22,8 @@ shape of the project is meant to support:
 - Keep the app prefix-aware so it can live at `/<repo-name>/` instead of only `/`.
 - Keep the code understandable enough that a future Codex session can work from
   the repository alone.
+- Keep optional capabilities lazy so unused ML, audio, mapping, graphics, search,
+  and optimization support does not add unnecessary runtime or install overhead.
 
 ## High-Level Architecture
 
@@ -30,12 +32,30 @@ The app has three main layers:
 1. Flask backend
    - Serves HTML, JSON API routes, health/admin endpoints, and static assets.
 2. SQLite persistence
-   - Stores a small sample schema and seed data for future feature work.
+   - Stores migration metadata, app state/events, and seed data for future feature work.
 3. Shell-specific frontend
-   - `graphical` shell for canvas-heavy or game-like interaction.
+   - `graphical` shell for canvas-heavy, sprite, bitmap, animation, or game-like interaction.
    - `text` shell for forms, dashboards, and conventional application flows.
+4. Lazy capability modules
+   - Audio analysis, SQLite search, pure-Python optimization, OpenStreetMap defaults,
+     optional scikit-learn ML, and frontend helper modules.
 
 Both shells share the same backend, deployment process, and database.
+
+## Capability Model
+
+The scaffold includes capability entry points without making them mandatory for
+every derived app:
+
+- audio: browser sample capture helpers plus a backend sample-array analyzer
+- search: SQLite-backed record search
+- optimization: small pure-Python route/order optimization
+- mapping: OpenStreetMap tile settings and a default location of UBC Vancouver
+- machine learning: scikit-learn integration through `server/requirements-ml.txt`
+- rich graphics: canvas renderer hooks for bitmap textures and sprites
+
+Use these modules first when a user asks for those domains. Install optional
+dependencies only when the requested feature needs them.
 
 ## Shell Model
 
@@ -157,6 +177,7 @@ It is not currently optimized for:
 - offline-first behavior
 - secret management beyond per-checkout `.env`
 - high-write database workloads
+- account-bound map providers unless the user explicitly asks for them
 
 ## Extension Guidance
 
@@ -164,6 +185,12 @@ When extending the project:
 
 - prefer shared backend changes when both shells need the feature
 - keep shell-specific UI isolated under the shell’s own template/static files
+- preserve the shared design tokens in `static/app/base.css`
+- keep graphical features compatible with sprite/bitmap rendering rather than
+  limiting the shell to hand-drawn polygons
+- assume UBC Vancouver for location-dependent defaults unless the user specifies
+  another location
+- use OpenStreetMap for mapping and scikit-learn for requested ML features
 - avoid introducing hidden build steps unless they are clearly worth the added
   operational cost
 - preserve prefix-aware routing and multi-app deployment assumptions

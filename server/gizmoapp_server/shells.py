@@ -25,8 +25,8 @@ SHELL_DEFINITIONS = {
         "description": "Blank light canvas shell ready for sprites, animation, or future 3D.",
         "template": "index.html",
         "asset_subpath": "app/",
-        "theme_color": "#eef7ff",
-        "background_color": "#eef7ff",
+        "theme_color": "#f6f5ef",
+        "background_color": "#f6f5ef",
     },
     "text": {
         "slug": "text",
@@ -34,8 +34,8 @@ SHELL_DEFINITIONS = {
         "description": "Blank text-first shell ready for forms, lists, dashboards, or workflows.",
         "template": "index_text.html",
         "asset_subpath": "app/text/",
-        "theme_color": "#f8fafc",
-        "background_color": "#f8fafc",
+        "theme_color": "#f6f5ef",
+        "background_color": "#f6f5ef",
     },
 }
 

@@ -49,12 +49,14 @@ async function bootstrap() {
   registerServiceWorker(config.serviceWorkerUrl);
 
   setText("prefix-value", config.urlPrefix || "/");
+  setText("location-value", config.defaultLocation?.label || "UBC Vancouver");
 
   try {
     const payload = await fetchBootstrap(config.apiBase);
     setText("mode-value", payload.app.mode);
     setText("shell-value", payload.app.shellLabel);
     setText("db-value", payload.health.database);
+    setText("location-value", payload.capabilitySummary?.defaultLocation?.label || "UBC Vancouver");
     updateHealthPill(payload.health.status === "ok");
   } catch (error) {
     console.error(error);

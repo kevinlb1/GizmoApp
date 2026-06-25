@@ -6,6 +6,12 @@ from datetime import UTC, datetime
 
 from flask import Flask, current_app, jsonify, request
 
+from .capabilities import capability_payload
+from .capabilities.audio import analyze_samples
+from .capabilities.mapping import openstreetmap_config
+from .capabilities.ml import run_kmeans, sklearn_status
+from .capabilities.optimization import nearest_neighbor_route
+from .capabilities.search import search_records
 from .config import scoped_path
 from .db import fetch_sample_nodes, get_db, insert_sample_node
 
@@ -23,6 +29,7 @@ def _health_payload() -> dict:
 
 def _bootstrap_payload() -> dict:
     connection = get_db()
+    api_base = scoped_path(current_app.config["URL_PREFIX"], "api").rstrip("/")
     return {
         "app": {
             "name": current_app.config["APP_NAME"],
@@ -34,6 +41,7 @@ def _bootstrap_payload() -> dict:
         },
         "health": _health_payload(),
         "availableShells": current_app.config["AVAILABLE_SHELLS"],
+        "capabilitySummary": capability_payload(api_base),
         "sampleNodes": fetch_sample_nodes(connection),
     }
 
@@ -76,6 +84,48 @@ def register_api_routes(app: Flask) -> None:
     @app.get(scoped_path(prefix, "api/bootstrap"))
     def bootstrap():
         return jsonify(_bootstrap_payload())
+
+    @app.get(scoped_path(prefix, "api/capabilities"))
+    def capabilities():
+        api_base = scoped_path(prefix, "api").rstrip("/")
+        return jsonify(capability_payload(api_base))
+
+    @app.get(scoped_path(prefix, "api/search"))
+    def search():
+        query = request.args.get("q", "")
+        return jsonify(search_records(get_db(), query))
+
+    @app.get(scoped_path(prefix, "api/map/default"))
+    def map_default():
+        return jsonify(openstreetmap_config())
+
+    @app.get(scoped_path(prefix, "api/ml/status"))
+    def ml_status():
+        return jsonify(sklearn_status())
+
+    @app.post(scoped_path(prefix, "api/ml/kmeans"))
+    def ml_kmeans():
+        payload = request.get_json(silent=True) or {}
+        result, errors, status = run_kmeans(payload)
+        if errors:
+            return jsonify({"errors": errors, **result}), status
+        return jsonify(result)
+
+    @app.post(scoped_path(prefix, "api/optimize/route"))
+    def optimize_route():
+        payload = request.get_json(silent=True) or {}
+        result, errors = nearest_neighbor_route(payload)
+        if errors:
+            return jsonify({"errors": errors}), 400
+        return jsonify(result)
+
+    @app.post(scoped_path(prefix, "api/audio/analyze"))
+    def audio_analyze():
+        payload = request.get_json(silent=True) or {}
+        result, errors = analyze_samples(payload)
+        if errors:
+            return jsonify({"errors": errors}), 400
+        return jsonify(result)
 
     @app.route(scoped_path(prefix, "api/sample-nodes"), methods=["GET", "POST"])
     def sample_nodes():

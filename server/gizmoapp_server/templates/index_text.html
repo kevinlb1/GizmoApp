@@ -13,31 +13,54 @@
     <link rel="manifest" href="{{ manifest_url }}">
     <link rel="icon" href="{{ icon_url }}" sizes="192x192">
     <link rel="apple-touch-icon" href="{{ apple_touch_icon_url }}">
+    <link rel="stylesheet" href="{{ shared_asset_base }}base.css">
     <link rel="stylesheet" href="{{ asset_base }}styles.css">
   </head>
-  <body class="text-shell-body">
-    <div class="text-shell">
-      <header class="text-topbar">
-        <div>
-          <p class="text-eyebrow">{{ shell_label }} shell</p>
+  <body class="shell-body text-shell-body">
+    <div class="app-frame text-frame">
+      <header class="app-topbar">
+        <a class="brand-mark" href="{{ base_href }}" aria-label="{{ app_name }} home">G</a>
+        <div class="brand-copy">
+          <p class="shell-kicker">{{ shell_label }}</p>
           <h1>{{ app_name }}</h1>
         </div>
-        <div class="text-actions" aria-label="App status">
-          <span class="text-health" id="text-health-pill">Booting</span>
-          <span class="text-chip">DB <strong id="db-value">...</strong></span>
-          <span class="text-chip">Path <strong id="prefix-value">/</strong></span>
-          <button class="text-install" id="install-button" hidden>Install</button>
-          <a class="text-link" href="{{ admin_url }}">Admin</a>
-        </div>
+        <nav class="app-actions" aria-label="App controls">
+          <span class="connection-indicator" id="text-health-pill" data-state="booting">Booting</span>
+          <button class="command-button" id="install-button" hidden>Install</button>
+          <a class="command-button" href="{{ admin_url }}">Admin</a>
+        </nav>
       </header>
 
-      <main class="text-blank" aria-label="Blank text workspace">
-        <p>Blank workspace</p>
+      <main class="text-workspace" aria-label="Text workspace">
+        <section class="workspace-panel primary-panel" aria-label="Primary workspace">
+          <div class="workspace-titlebar">
+            <h2>Workspace</h2>
+            <span id="mode-value">Public</span>
+          </div>
+          <div class="empty-state">
+            <span class="empty-mark" aria-hidden="true"></span>
+            <p>Ready</p>
+          </div>
+        </section>
+
+        <section class="workspace-panel status-panel" aria-label="Runtime status">
+          <div class="status-row">
+            <span>Database</span>
+            <strong id="db-value">...</strong>
+          </div>
+          <div class="status-row">
+            <span>Path</span>
+            <strong id="prefix-value">/</strong>
+          </div>
+          <div class="status-row">
+            <span>Location</span>
+            <strong id="location-value">UBC Vancouver</strong>
+          </div>
+        </section>
       </main>
     </div>
 
     <p id="install-hint" hidden></p>
-    <span id="mode-value" hidden>Public</span>
     <span id="shell-value" hidden>{{ shell_label }}</span>
     <script id="gizmoapp-config" type="application/json">{{ client_config | tojson }}</script>
     <script type="module" src="{{ asset_base }}main.js"></script>

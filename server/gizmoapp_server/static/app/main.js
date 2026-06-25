@@ -42,7 +42,7 @@ function registerServiceWorker(url) {
 
 async function bootstrap() {
   const config = readConfig();
-  new SceneRenderer(document.getElementById("scene-canvas"));
+  const renderer = new SceneRenderer(document.getElementById("scene-canvas"));
 
   setupInstallControls({
     button: document.getElementById("install-button"),
@@ -52,6 +52,7 @@ async function bootstrap() {
   registerServiceWorker(config.serviceWorkerUrl);
 
   setText("prefix-value", config.urlPrefix || "/");
+  setText("location-value", config.defaultLocation?.label || "UBC Vancouver");
 
   try {
     const payload = await fetchBootstrap(config.apiBase);
@@ -59,6 +60,8 @@ async function bootstrap() {
     setText("shell-value", payload.app.shellLabel);
     setText("api-value", "Online");
     setText("db-value", payload.health.database);
+    setText("location-value", payload.capabilitySummary?.defaultLocation?.label || "UBC Vancouver");
+    renderer.setNodes(payload.sampleNodes);
     updateHealthPill(payload.health.status === "ok");
   } catch (error) {
     console.error(error);

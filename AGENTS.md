@@ -16,7 +16,8 @@
 - The app should remain anonymous and public for now, but the structure should not make later authentication work difficult.
 - The frontend should be installable as an app-like PWA, but offline support is not currently required.
 - The project should keep at least two blank shells in the same codebase: a graphical shell and a more standard text-first shell.
-- Default shells should stay blank and light enough for future visual work to be readable. Do not seed the starter with a busy demo scene, fish tank, flock, dashboard, sample table, or workflow mockup unless the user explicitly asks for that app content.
+- Default shells should stay light enough for future visual work to be readable. Do not seed the starter with a busy demo scene, fish tank, flock, dashboard, sample table, or workflow mockup unless the user explicitly asks for that app content.
+- The graphical shell must allow richer graphics than simple canvas polygons/ellipses; preserve support for layered sprites, bitmap textures, and future renderer swaps.
 - A core purpose of this repository is to let a future Codex session start from near-zero context and still build, explain, and deploy a useful web app for a non-expert user.
 
 ## Primary Objective
@@ -32,6 +33,9 @@
 - Favor simple deployable implementations over introducing heavy tooling. The current frontend strategy is intentionally build-free.
 - When adding features, preserve the ability to run behind an nginx path prefix such as `/demo-app` or `/<repo-name>`.
 - Treat this repository as a starter/template for future independent apps. Prefer design choices that make cloning and rebranding easy.
+- If a feature depends on geographic location and the user has not given a location, assume UBC Vancouver.
+- If the user requests mapping, prefer OpenStreetMap before adding a paid or account-bound mapping provider.
+- If the user requests machine learning, use scikit-learn through the optional `server/requirements-ml.txt` dependency path rather than adding it to the base install.
 
 ## Architecture Snapshot
 - Backend: Python `Flask`
@@ -56,6 +60,10 @@
 - `server/gizmoapp_server/views.py`: page routes and shell/template selection
 - `server/gizmoapp_server/api.py`: JSON API routes
 - `server/gizmoapp_server/db.py`: SQLite schema, seeding, and DB helpers
+- `server/gizmoapp_server/capabilities/`: lazy backend capability modules for audio, search, optimization, mapping, and ML
+- `server/gizmoapp_server/static/app/base.css`: shared responsive design tokens and app-frame styles
+- `server/gizmoapp_server/static/app/capabilities/`: optional frontend helpers for browser audio, OpenStreetMap tile helpers, ML calls, and optimization calls
+- `docs/agent-extension-guide.md`: concrete extension guidance for future agentic coding tasks
 - `scripts/install_machine_dependencies.sh`: one-time host bootstrap for system packages
 - `scripts/envfile.py`: shared helper for safely reading and writing shell-compatible `.env` files
 - `scripts/sync_deploy_env.sh`: merges git-tracked settings from `deploy/app.env` into the live `.env` without overwriting machine-specific values
@@ -80,6 +88,7 @@
 - Prefer `GIZMOAPP_SHELL=auto` for agentic/student workspaces so the preview follows the shell-specific files that were changed.
 - For template-derived apps, prefer changing git-tracked runtime settings in `deploy/app.env` and pushing them, rather than SSHing into the server to edit `.env`.
 - If the user asks for a feature, decide first whether it belongs in the graphical shell, the text shell, or shared backend/API code.
+- For sound, search, optimization, mapping, machine-learning, or rich-graphics work, check `docs/agent-extension-guide.md` and the capability modules before adding new infrastructure.
 - Preserve deployability while editing: if runtime behavior, dependencies, routes, or operational steps change, update `README.md` and this file.
 - Keep local install artifacts and machine-specific files out of Git; update `.gitignore` when new ones appear.
 - Before saying validation is blocked by missing local Python packages, run `make validate`. That helper should reuse `.venv` when present or install repo-local fallback deps into `.pydeps/` and run the `unittest` suite without asking the user to intervene.
@@ -113,7 +122,11 @@
 - Prefer lightweight, easy-to-operate defaults unless the user chooses otherwise.
 - The current template should favor a low-friction, easy-to-edit stack over unnecessary tooling.
 - Use SQLite as the initial persistent store.
-- Include a minimal backend API, a sample database schema, and a lightweight admin/health surface.
+- Include a minimal backend API, migration-backed SQLite schema, app state/event tables, and a lightweight admin/health surface.
+- Keep optional capabilities lazy: unused ML, map, audio, graphics, and optimization helpers should not impose startup or install overhead.
+- Use OpenStreetMap for mapping features unless the user explicitly asks for another provider.
+- For location-dependent defaults, assume UBC Vancouver unless the user gives another location.
+- Use scikit-learn for ML requests, but keep it out of the base requirements so non-ML apps stay lean.
 - Provide a manual server install script for dependencies; do not make cron responsible for first-time machine setup.
 - Design deploy automation so it can fast-forward from git in user mode and reload `gunicorn` only when backend/runtime changes require it.
 - A push to the app repository should be the normal way to send template-managed runtime changes to the server. Avoid requiring manual SSH edits for settings such as shell selection.

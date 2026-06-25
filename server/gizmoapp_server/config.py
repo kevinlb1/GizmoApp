@@ -81,7 +81,7 @@ def load_settings(shell_variant: str | None = None, repo_root: Path | None = Non
 
     settings = {
         "APP_NAME": os.getenv("GIZMOAPP_APP_NAME", "GizmoApp"),
-        "APP_TAGLINE": "Blank webapp template",
+        "APP_TAGLINE": "Agentic coding starter",
         "URL_PREFIX": url_prefix,
         "DB_PATH": db_path,
         "REPO_ROOT": repo_root,
@@ -92,9 +92,11 @@ def load_settings(shell_variant: str | None = None, repo_root: Path | None = Non
         "ADMIN_NOTES": [
             "Anonymous/public access only in the initial scaffold.",
             "Frontend is build-free by design to keep deploys easy.",
-            "Touch-first layout takes priority over desktop polish.",
+            "Responsive layout should be checked across phone, tablet, laptop, and desktop widths.",
             "The project ships with both graphical and text-first frontend shells.",
             "GIZMOAPP_SHELL=auto chooses the shell from changed files; graphical/text force a shell.",
+            "Machine-learning features should install scikit-learn only when requested.",
+            "Mapping features should use OpenStreetMap defaults and assume UBC Vancouver unless told otherwise.",
         ],
     }
     settings.update(shell_settings(shell_variant or os.getenv("GIZMOAPP_SHELL", DEFAULT_SHELL), repo_root=repo_root))
