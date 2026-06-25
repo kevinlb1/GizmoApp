@@ -1,8 +1,8 @@
 # AGENTS.md
 
 ## Workflow Rules
-1. Do not create commits by default when Git metadata writes would require sandbox escalation. When the user explicitly asks for Git writes or commits are available without escalation, use a descriptive commit message.
-2. Standing user instruction for this repository: do not automatically run commands that would need sandbox escalation. This includes remote Git operations, package installs, browser/server automation, sudo, deployment scripts, SSH, and writes outside the workspace unless the user explicitly asks for that action in the current turn.
+1. Standing user instruction for the GizmoApp source repository: commit completed repository changes at the end of every Codex turn with a descriptive commit message. This applies to development of GizmoApp itself, not to repositories cloned from this template.
+2. Standing user instruction for template-derived repositories: do not automatically run commands that would need sandbox escalation. This includes remote Git operations, package installs, browser/server automation, sudo, deployment scripts, SSH, and writes outside the workspace unless the user explicitly asks for that action in the current turn.
 3. Update this `AGENTS.md` whenever a task changes important operational, deployment, workflow, or safety context.
 4. Prefer changes that make future Codex edits easy: keep structure explicit, keep files reasonably small, and avoid unnecessary complexity.
 5. If Git author identity is missing, prefer configuring a repo-local identity instead of changing global Git settings without explicit user direction.
@@ -50,7 +50,7 @@ When this repo is cloned inside CodingWorkspace and the student asks for a visua
 - Favor simple deployable implementations over introducing heavy tooling. The current frontend strategy is intentionally build-free.
 - When adding features, preserve the ability to run behind an nginx path prefix such as `/demo-app` or `/<repo-name>`.
 - Treat this repository as a starter/template for future independent apps. Prefer design choices that make cloning and rebranding easy.
-- Keep the default agent workflow escalation-free. Prefer static inspection, unit tests using already-installed local dependencies, and repo-local edits. Do not trigger network installs, local browser automation, local dev servers, remote Git, privileged setup, or deployment unless the user asks for that specific action.
+- For template-derived apps, keep the default agent workflow escalation-free. Prefer static inspection, unit tests using already-installed local dependencies, and repo-local edits. Do not trigger network installs, local browser automation, local dev servers, remote Git, privileged setup, or deployment unless the user asks for that specific action.
 - If a requested feature depends on geographic location and the user has not given a location, assume UBC Vancouver.
 - If the user requests mapping, prefer OpenStreetMap before adding a paid or account-bound mapping provider.
 - If the user requests machine learning, use scikit-learn through the optional `server/requirements-ml.txt` dependency path rather than adding it to the base install.
@@ -114,7 +114,7 @@ When this repo is cloned inside CodingWorkspace and the student asks for a visua
 - Keep local install artifacts and machine-specific files out of Git; update `.gitignore` when new ones appear.
 - Before saying validation is blocked by missing local Python packages, run `make validate`. That helper should reuse `.venv`, system packages, or repo-local `.pydeps/` when already present, but it must not install packages automatically.
 - For graphics or visual UI changes, run `ALLOW_BROWSER_CHECK=1 make visual-check` only when browser/server automation is already permitted and Playwright/Chromium are already available. Do not run `make visual-install` automatically; if visual tooling is missing, report the blocker and the manual setup command.
-- After completing work, run the relevant validation you can run locally. Commit and push only when doing so will not require escalation or when the user explicitly asks for the Git action in the current turn.
+- After completing work in the GizmoApp source repository, run the relevant validation you can run locally and create a local Git commit. For template-derived apps, commit or push only when the user explicitly asks for that Git action in the current turn.
 
 ## Non-Expert User Support
 - Use plain language when describing choices, especially around shell selection, deployment, gunicorn, nginx, cron, and SQLite.
@@ -213,7 +213,7 @@ When this repo is cloned inside CodingWorkspace and the student asks for a visua
 - When adding starter-friendly functionality, keep rebranding effort low: avoid scattering project-name-specific strings through shared logic unless necessary.
 
 ## Safety Guidance
-- The user has explicitly requested that repository defaults avoid escalation requests. Do not push, fetch, install packages, start browser/server automation, run sudo, SSH, or deploy unless the user explicitly asks for that action in the current turn.
+- The user has explicitly requested that template-derived repository defaults avoid escalation requests. Local commits are expected for GizmoApp source-repository development. Do not push, fetch, install packages, start browser/server automation, run sudo, SSH, or deploy unless the user explicitly asks for that action in the current turn.
 - Keep deployment scripts manual and opt-in. Avoid making irreversible server or deployment changes without clear user direction.
 - Treat HTTPS as a practical requirement for reliable PWA installation, especially on iPhone and Chromium-based browsers.
 
