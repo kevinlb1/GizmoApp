@@ -92,6 +92,27 @@ Machine-learning features should install the optional scikit-learn dependency on
 .venv/bin/pip install -r server/requirements-ml.txt
 ```
 
+## Visual Verification
+
+Graphics work should be checked with a browser screenshot pass before it is treated
+as finished. The visual pipeline is optional so the base app stays lean:
+
+```bash
+make visual-install
+make visual-check
+```
+
+`make visual-check` starts the graphical shell, captures phone, tablet, and
+desktop screenshots, checks that `#scene-canvas` is nonblank, and writes:
+
+- `var/visual-report/index.html`
+- `var/visual-report/report.json`
+- `var/visual-report/graphical-*.png`
+
+Open the HTML report and inspect the screenshots. Pixel checks can catch blank or
+flat canvases, but they do not replace human review of whether the graphics look
+good.
+
 ## Shell Selection
 
 The project keeps both blank shells in the same codebase and shares the same backend, API, database, and deployment scripts.

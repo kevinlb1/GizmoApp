@@ -50,6 +50,24 @@ supports:
 For heavier visuals, add a renderer adapter under `static/app/` and lazy-load
 the library only from the shell that needs it.
 
+Before ending a turn that changes graphics, run the visual pipeline:
+
+```bash
+make visual-check
+```
+
+If Playwright/Chromium is not installed, set it up with:
+
+```bash
+make visual-install
+```
+
+The report lands in `var/visual-report/index.html` with phone, tablet, and
+desktop screenshots plus canvas pixel checks. Inspect the screenshots yourself.
+If the visuals are blank, awkwardly framed, overlapping, or ugly, improve them
+before finalizing the task. If tooling or sandbox restrictions block the visual
+check, report that blocker clearly.
+
 ## Audio
 
 Use `static/app/capabilities/audio.js` for browser microphone capture. Send

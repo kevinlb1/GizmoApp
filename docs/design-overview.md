@@ -24,6 +24,8 @@ shape of the project is meant to support:
   the repository alone.
 - Keep optional capabilities lazy so unused ML, audio, mapping, graphics, search,
   and optimization support does not add unnecessary runtime or install overhead.
+- Keep visual verification optional but available, so agents can inspect graphics
+  screenshots without forcing browser automation into the base runtime.
 
 ## High-Level Architecture
 
@@ -53,6 +55,8 @@ every derived app:
 - mapping: OpenStreetMap tile settings and a default location of UBC Vancouver
 - machine learning: scikit-learn integration through `server/requirements-ml.txt`
 - rich graphics: canvas renderer hooks for bitmap textures and sprites
+- visual verification: Playwright screenshot capture and canvas pixel sanity
+  checks through `scripts/visual_verify.py`
 
 Use these modules first when a user asks for those domains. Install optional
 dependencies only when the requested feature needs them.

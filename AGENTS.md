@@ -7,6 +7,7 @@
 4. Prefer changes that make future Codex edits easy: keep structure explicit, keep files reasonably small, and avoid unnecessary complexity.
 5. If Git author identity is missing, prefer configuring a repo-local identity instead of changing global Git settings without explicit user direction.
 6. If a task installs or generates local-only files that should not live in the repository, add them to `.gitignore` as part of the same task.
+7. When a task changes graphics, canvas rendering, visual styling, maps, images, animation, or other user-visible visuals, run visual verification before ending the turn. Use `make visual-check` after `make visual-install` has prepared Playwright. Inspect `var/visual-report/index.html` and improve the result if it looks bad or the canvas checks fail. If visual verification is blocked by missing browser tooling, sandbox restrictions, or another real blocker, say so explicitly in the final response instead of calling the graphics verified.
 
 ## Project Intent
 - This repository is intended to become a blank webapp scaffold with multiple frontend shell variants.
@@ -64,6 +65,8 @@
 - `server/gizmoapp_server/static/app/base.css`: shared responsive design tokens and app-frame styles
 - `server/gizmoapp_server/static/app/capabilities/`: optional frontend helpers for browser audio, OpenStreetMap tile helpers, ML calls, and optimization calls
 - `docs/agent-extension-guide.md`: concrete extension guidance for future agentic coding tasks
+- `scripts/visual_verify.py`: optional Playwright-based screenshot and canvas sanity-check pipeline for graphics work
+- `server/requirements-visual.txt`: optional visual-verification dependencies
 - `scripts/install_machine_dependencies.sh`: one-time host bootstrap for system packages
 - `scripts/envfile.py`: shared helper for safely reading and writing shell-compatible `.env` files
 - `scripts/sync_deploy_env.sh`: merges git-tracked settings from `deploy/app.env` into the live `.env` without overwriting machine-specific values
@@ -92,6 +95,7 @@
 - Preserve deployability while editing: if runtime behavior, dependencies, routes, or operational steps change, update `README.md` and this file.
 - Keep local install artifacts and machine-specific files out of Git; update `.gitignore` when new ones appear.
 - Before saying validation is blocked by missing local Python packages, run `make validate`. That helper should reuse `.venv` when present or install repo-local fallback deps into `.pydeps/` and run the `unittest` suite without asking the user to intervene.
+- For graphics or visual UI changes, run `make visual-check` and inspect the generated screenshots before finalizing. If Playwright or Chromium is not installed, run `make visual-install` when network/tooling access permits; otherwise report the blocker.
 - After completing work, run the relevant validation you can run locally, commit, and push automatically unless the user explicitly asks not to push.
 
 ## Non-Expert User Support
@@ -124,6 +128,7 @@
 - Use SQLite as the initial persistent store.
 - Include a minimal backend API, migration-backed SQLite schema, app state/event tables, and a lightweight admin/health surface.
 - Keep optional capabilities lazy: unused ML, map, audio, graphics, and optimization helpers should not impose startup or install overhead.
+- Keep the visual verification pipeline optional but maintained. The base app should not require Playwright at runtime, but agents doing graphics work should use it to see screenshots before finishing.
 - Use OpenStreetMap for mapping features unless the user explicitly asks for another provider.
 - For location-dependent defaults, assume UBC Vancouver unless the user gives another location.
 - Use scikit-learn for ML requests, but keep it out of the base requirements so non-ML apps stay lean.
@@ -177,6 +182,7 @@
 ## Editing Priorities
 - Prefer shared backend changes when a feature should work in both shells.
 - Keep shell-specific UI code under the shell’s own template and static asset directory.
+- For graphics work, do not rely only on code inspection or unit tests. Capture screenshots, inspect the rendered result, and iterate until the output is coherent across phone, tablet, and desktop viewports.
 - Avoid introducing a frontend build step unless the user explicitly wants the tradeoff.
 - Keep deployment automation understandable and inspectable by a future agent reading only this repo.
 - When adding starter-friendly functionality, keep rebranding effort low: avoid scattering project-name-specific strings through shared logic unless necessary.
