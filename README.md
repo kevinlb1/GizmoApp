@@ -4,7 +4,7 @@ GizmoApp is a blank webapp template repository intended to be easy for later Cod
 
 - A Python `Flask` backend that serves both the app shell and JSON API
 - A lightweight SQLite data store with migrations, app state tables, and sample rows
-- A touch-friendly graphical shell with a layered canvas renderer for sprites and bitmap textures
+- A touch-friendly graphical shell with sprite/bitmap-first rendering and layered texture support
 - A minimal text-first shell with the same responsive app frame
 - Lazy capability APIs for audio analysis, search, optimization, mapping, and optional machine learning
 - Deployment examples for `nginx` in front of `gunicorn`
@@ -12,7 +12,7 @@ GizmoApp is a blank webapp template repository intended to be easy for later Cod
 
 ## Why No Frontend Build Step
 
-The scaffold intentionally avoids Node and a frontend bundler. That keeps deployment and future edits simpler while still leaving room for richer rendering later. The frontend is split into small modules, and the canvas renderer already supports layered sprites and bitmap textures so a future change can add PixiJS, Three.js, map tiles, or generated image assets without restructuring the backend.
+The scaffold intentionally avoids Node and a frontend bundler. That keeps deployment and future edits simpler while still leaving room for richer rendering later. The frontend is split into small modules, and the canvas renderer defaults to generated bitmap sprites so a future change can add sprite sheets, PixiJS, Three.js, map tiles, or generated image assets without restructuring the backend.
 
 ## Repository Layout
 

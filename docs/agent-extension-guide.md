@@ -38,14 +38,24 @@ games, simulations, and rich visuals.
 
 ## Graphics
 
-The graphical shell is not limited to polygons and ellipses. `SceneRenderer`
-supports:
+The graphical shell is sprite/bitmap-first by default. `SceneRenderer` turns
+database-backed visual nodes into generated bitmap sprites, then renders them
+with `drawImage`. It supports:
 
 - generated bitmap textures
 - loaded image textures
 - layered sprites with opacity and rotation
 - database-backed visual nodes
 - pointer-driven animation
+
+Use direct canvas polygons, ellipses, and lines mainly for simple overlays,
+debugging, masks, hit areas, or explicitly vector-styled work. For finished
+graphics, prefer sprite sheets, generated bitmap textures, loaded PNG/WebP
+assets, or image-generated sprite bitmaps.
+
+Codex can produce sprite bitmaps when an image-generation tool is available. In
+coding-only environments, prefer procedural bitmap textures or small generated
+PNG assets checked into the repo when the asset should be durable.
 
 For heavier visuals, add a renderer adapter under `static/app/` and lazy-load
 the library only from the shell that needs it.

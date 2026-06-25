@@ -30,7 +30,10 @@ validate:
 	./scripts/run_local_validation.sh
 
 visual-install:
-	@if [ -x "$(VENV)/bin/python" ]; then PYBIN="$(VENV)/bin/python"; else PYBIN="$(PYTHON)"; fi; \
+	@if [ ! -x "$(VENV)/bin/python" ]; then "$(PYTHON)" -m venv "$(VENV)"; fi; \
+		PYBIN="$(VENV)/bin/python"; \
+		$$PYBIN -m pip install --upgrade pip wheel; \
+		$$PYBIN -m pip install -r server/requirements.txt; \
 		$$PYBIN -m pip install -r server/requirements-visual.txt; \
 		$$PYBIN -m playwright install chromium
 

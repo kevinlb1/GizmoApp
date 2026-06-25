@@ -165,6 +165,25 @@ def wait_for_url(url: str, timeout: float = 15.0) -> None:
     raise RuntimeError(f"Timed out waiting for {url}: {last_error}")
 
 
+def wait_for_server(process: subprocess.Popen, url: str, timeout: float = 15.0) -> None:
+    deadline = time.monotonic() + timeout
+    last_error: Exception | None = None
+    while time.monotonic() < deadline:
+        if process.poll() is not None:
+            output = ""
+            if process.stdout is not None:
+                output = process.stdout.read()
+            raise RuntimeError(f"Server exited before {url} was reachable.\n{output.strip()}")
+        try:
+            with urlopen(url, timeout=1.0) as response:
+                if 200 <= response.status < 500:
+                    return
+        except (OSError, URLError) as error:
+            last_error = error
+        time.sleep(0.2)
+    raise RuntimeError(f"Timed out waiting for {url}: {last_error}")
+
+
 def start_server(host: str, port: int, shell: str) -> subprocess.Popen:
     env = os.environ.copy()
     env["GIZMOAPP_SHELL"] = shell
@@ -219,7 +238,11 @@ def capture_visuals(base_url: str, output_dir: Path, viewports: tuple[dict[str, 
                 try:
                     page.goto(base_url, wait_until="networkidle", timeout=15000)
                     page.wait_for_selector("#scene-canvas", timeout=5000)
-                    page.wait_for_timeout(750)
+                    page.wait_for_function(
+                        "() => document.querySelector('#scene-canvas')?.dataset.rendered === 'true'",
+                        timeout=5000,
+                    )
+                    page.wait_for_timeout(250)
                     page.screenshot(path=str(screenshot_path), full_page=True)
                     metrics = page.evaluate(CANVAS_METRICS_JS)
                     checks = check_canvas_metrics(metrics)
@@ -348,7 +371,7 @@ def main() -> int:
         base_url = args.base_url or f"http://{args.host}:{port}/"
         if not args.no_start_server:
             process = start_server(args.host, port, args.shell)
-            wait_for_url(f"http://{args.host}:{port}/healthz")
+            wait_for_server(process, f"http://{args.host}:{port}/healthz")
         else:
             wait_for_url(base_url)
 

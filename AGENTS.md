@@ -18,7 +18,7 @@
 - The frontend should be installable as an app-like PWA, but offline support is not currently required.
 - The project should keep at least two blank shells in the same codebase: a graphical shell and a more standard text-first shell.
 - Default shells should stay light enough for future visual work to be readable. Do not seed the starter with a busy demo scene, fish tank, flock, dashboard, sample table, or workflow mockup unless the user explicitly asks for that app content.
-- The graphical shell must allow richer graphics than simple canvas polygons/ellipses; preserve support for layered sprites, bitmap textures, and future renderer swaps.
+- The graphical shell must be sprite/bitmap-first by default, not primitive-shape-first. Preserve support for layered sprites, generated or loaded bitmap textures, and future renderer swaps; use direct canvas polygons/ellipses mainly for hit areas, debug overlays, masks, or intentionally simple vector marks.
 - A core purpose of this repository is to let a future Codex session start from near-zero context and still build, explain, and deploy a useful web app for a non-expert user.
 
 ## Primary Objective
@@ -29,7 +29,7 @@
 ## Default Operating Model
 - Assume the user may not know the existing architecture. Briefly explain the active shell, backend, and deployment path when that context matters.
 - If the user asks for a conventional business/data-entry/dashboard/content app and does not specify a shell, prefer the text shell.
-- If the user asks for canvas, sprites, animation, game-like UI, rich visual interaction, or possible future 3D, prefer the graphical shell.
+- If the user asks for canvas, sprites, animation, game-like UI, rich visual interaction, or possible future 3D, prefer the graphical shell and start from bitmap textures/sprites when practical.
 - Keep both shells viable unless the user explicitly asks to remove one.
 - Favor simple deployable implementations over introducing heavy tooling. The current frontend strategy is intentionally build-free.
 - When adding features, preserve the ability to run behind an nginx path prefix such as `/demo-app` or `/<repo-name>`.
@@ -128,6 +128,7 @@
 - Use SQLite as the initial persistent store.
 - Include a minimal backend API, migration-backed SQLite schema, app state/event tables, and a lightweight admin/health surface.
 - Keep optional capabilities lazy: unused ML, map, audio, graphics, and optimization helpers should not impose startup or install overhead.
+- For graphical features, prefer sprite sheets, loaded/generated bitmap textures, or image-generated assets as the default visual representation. Codex can produce sprite bitmap assets when image generation is available; otherwise use procedural bitmap textures or small repo-native generated PNGs.
 - Keep the visual verification pipeline optional but maintained. The base app should not require Playwright at runtime, but agents doing graphics work should use it to see screenshots before finishing.
 - Use OpenStreetMap for mapping features unless the user explicitly asks for another provider.
 - For location-dependent defaults, assume UBC Vancouver unless the user gives another location.
@@ -183,6 +184,7 @@
 - Prefer shared backend changes when a feature should work in both shells.
 - Keep shell-specific UI code under the shell’s own template and static asset directory.
 - For graphics work, do not rely only on code inspection or unit tests. Capture screenshots, inspect the rendered result, and iterate until the output is coherent across phone, tablet, and desktop viewports.
+- For graphical work, start with bitmaps and sprites where possible. Avoid building finished visuals entirely from ad hoc polygon/ellipse drawing unless the requested style is explicitly vector/simple.
 - Avoid introducing a frontend build step unless the user explicitly wants the tradeoff.
 - Keep deployment automation understandable and inspectable by a future agent reading only this repo.
 - When adding starter-friendly functionality, keep rebranding effort low: avoid scattering project-name-specific strings through shared logic unless necessary.

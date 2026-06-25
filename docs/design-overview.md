@@ -36,7 +36,7 @@ The app has three main layers:
 2. SQLite persistence
    - Stores migration metadata, app state/events, and seed data for future feature work.
 3. Shell-specific frontend
-   - `graphical` shell for canvas-heavy, sprite, bitmap, animation, or game-like interaction.
+   - `graphical` shell for sprite/bitmap-first canvas, animation, or game-like interaction.
    - `text` shell for forms, dashboards, and conventional application flows.
 4. Lazy capability modules
    - Audio analysis, SQLite search, pure-Python optimization, OpenStreetMap defaults,
@@ -54,7 +54,8 @@ every derived app:
 - optimization: small pure-Python route/order optimization
 - mapping: OpenStreetMap tile settings and a default location of UBC Vancouver
 - machine learning: scikit-learn integration through `server/requirements-ml.txt`
-- rich graphics: canvas renderer hooks for bitmap textures and sprites
+- rich graphics: default sprite/bitmap rendering plus hooks for loaded textures
+  and sprite sheets
 - visual verification: Playwright screenshot capture and canvas pixel sanity
   checks through `scripts/visual_verify.py`
 
@@ -190,8 +191,8 @@ When extending the project:
 - prefer shared backend changes when both shells need the feature
 - keep shell-specific UI isolated under the shell’s own template/static files
 - preserve the shared design tokens in `static/app/base.css`
-- keep graphical features compatible with sprite/bitmap rendering rather than
-  limiting the shell to hand-drawn polygons
+- keep graphical features sprite/bitmap-first; direct polygon/ellipse drawing is
+  for overlays, masks, debug visuals, or intentionally vector-simple work
 - assume UBC Vancouver for location-dependent defaults unless the user specifies
   another location
 - use OpenStreetMap for mapping and scikit-learn for requested ML features
