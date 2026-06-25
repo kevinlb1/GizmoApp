@@ -38,8 +38,9 @@ games, simulations, and rich visuals.
 
 ## Graphics
 
-The graphical shell is sprite/bitmap-first by default. `SceneRenderer` turns
-database-backed visual nodes into generated bitmap sprites, then renders them
+The graphical shell starts as an intentionally blank canvas. It is still
+sprite/bitmap-first when graphics are requested: `SceneRenderer` can turn
+database-backed visual nodes into generated bitmap sprites, then render them
 with `drawImage`. It supports:
 
 - generated bitmap textures
@@ -57,19 +58,37 @@ Codex can produce sprite bitmaps when an image-generation tool is available. In
 coding-only environments, prefer procedural bitmap textures or small generated
 PNG assets checked into the repo when the asset should be durable.
 
+For small hosted models, use this bounded recipe for rich visual subjects:
+
+1. Put the main subject in `scene.js` as an offscreen texture function, for
+   example `createHedgehogTexture(params)`, returning a canvas or image.
+2. Compose the texture at a higher internal resolution with gradients, noise,
+   shadows, soft edges, and a few carefully placed paths. The final scene should
+   draw the composed subject with `drawImage`, not rebuild it every frame from a
+   pile of visible top-level primitives.
+3. Keep parameters explicit and few at first, such as quill length, snout
+   length, eye size, color, pose, or count. Add controls in `index.html`, read
+   them in `main.js`, and pass them to the renderer through one method.
+4. Make a visible first version before exploring optional libraries, backend
+   capabilities, deployment scripts, or visual-verification implementation
+   details.
+5. If browser screenshots are not already available, do not block the whole turn
+   on installing them. Run static/unit validation, check `git status --short`,
+   and clearly say that screenshot verification was blocked.
+
 For heavier visuals, add a renderer adapter under `static/app/` and lazy-load
 the library only from the shell that needs it.
 
 Before ending a turn that changes graphics, run the visual pipeline:
 
 ```bash
-make visual-check
+ALLOW_BROWSER_CHECK=1 make visual-check
 ```
 
-If Playwright/Chromium is not installed, set it up with:
+Run that only when browser/server automation is already permitted and Playwright/Chromium are already available. If Playwright/Chromium is not installed, do not install it automatically; report the blocker and give this manual setup command:
 
 ```bash
-make visual-install
+ALLOW_NETWORK_INSTALL=1 make visual-install
 ```
 
 The report lands in `var/visual-report/index.html` with phone, tablet, and
@@ -99,18 +118,18 @@ simple path.
 
 ## Mapping And Location
 
-Use OpenStreetMap by default. `GET /api/map/default` returns the tile URL template,
-attribution, and default location.
+Use OpenStreetMap when mapping is requested. `GET /api/map/default` returns the
+tile URL template, attribution, and default location for mapping features.
 
-For location-dependent features, assume the user is at UBC Vancouver unless they
-give a different location.
+For requested location-dependent features, assume the user is at UBC Vancouver
+only when they give no different location.
 
 ## Machine Learning
 
 Use scikit-learn when the user requests ML. Keep it optional:
 
 ```bash
-.venv/bin/pip install -r server/requirements-ml.txt
+ALLOW_NETWORK_INSTALL=1 make install-ml
 ```
 
 Do not add scikit-learn to `server/requirements.txt` unless ML becomes mandatory

@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  ./scripts/migrate_nginx_to_neutral_host.sh [options]
+  ALLOW_DEPLOY_ACTIONS=1 ./scripts/migrate_nginx_to_neutral_host.sh [options]
 
 Copies a legacy app-named nginx site file to a neutral host file, enables the
 new file, disables the old enabled path, bootstraps the managed GizmoApp nginx
@@ -60,6 +60,11 @@ if [[ ! -x "${BOOTSTRAP_SCRIPT}" ]]; then
   exit 1
 fi
 
+source "${SCRIPT_DIR}/require_explicit_approval.sh"
+require_any_explicit_approval \
+  "copy and replace nginx config under /etc and reload nginx with sudo" \
+  ALLOW_DEPLOY_ACTIONS
+
 if ! command -v sudo >/dev/null 2>&1 || ! command -v nginx >/dev/null 2>&1; then
   echo "sudo and nginx are required." >&2
   exit 1
@@ -103,4 +108,4 @@ echo "Neutral host file: ${new_available}"
 echo
 echo "Next recommended step:"
 echo "  Register any already-installed app snippets, for example:"
-echo "  ./scripts/register_nginx_instance_snippet.sh --name gizmotest --snippet /home/kevinlb/bin/gizmotest/var/generated/nginx-location.conf"
+echo "  ALLOW_DEPLOY_ACTIONS=1 ./scripts/register_nginx_instance_snippet.sh --name gizmotest --snippet /home/kevinlb/bin/gizmotest/var/generated/nginx-location.conf"

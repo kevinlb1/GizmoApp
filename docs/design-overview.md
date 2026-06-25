@@ -34,12 +34,12 @@ The app has three main layers:
 1. Flask backend
    - Serves HTML, JSON API routes, health/admin endpoints, and static assets.
 2. SQLite persistence
-   - Stores migration metadata, app state/events, and seed data for future feature work.
+   - Stores migration metadata and app state/events for future feature work.
 3. Shell-specific frontend
    - `graphical` shell for sprite/bitmap-first canvas, animation, or game-like interaction.
    - `text` shell for forms, dashboards, and conventional application flows.
 4. Lazy capability modules
-   - Audio analysis, SQLite search, pure-Python optimization, OpenStreetMap defaults,
+   - Audio analysis, SQLite search, pure-Python optimization, OpenStreetMap helpers,
      optional scikit-learn ML, and frontend helper modules.
 
 Both shells share the same backend, deployment process, and database.
@@ -52,7 +52,7 @@ every derived app:
 - audio: browser sample capture helpers plus a backend sample-array analyzer
 - search: SQLite-backed record search
 - optimization: small pure-Python route/order optimization
-- mapping: OpenStreetMap tile settings and a default location of UBC Vancouver
+- mapping: OpenStreetMap tile settings available when a feature requests maps
 - machine learning: scikit-learn integration through `server/requirements-ml.txt`
 - rich graphics: default sprite/bitmap rendering plus hooks for loaded textures
   and sprite sheets
@@ -71,8 +71,9 @@ Shell selection is a deployment/runtime choice, not a repo split.
 - `server/wsgi_text.py` forces the text shell.
 
 The intended default for template-derived apps is to store the chosen shell in
-`deploy/app.env`, commit it, and push it. The deploy pipeline then applies that
-setting to the live service without requiring a manual SSH edit on the server.
+`deploy/app.env`. During an explicitly requested deploy flow, commit and push
+that setting so the deploy pipeline can apply it to the live service without
+requiring a manual SSH edit on the server.
 
 For agentic/student workspaces, the preferred value is `GIZMOAPP_SHELL=auto`.
 Auto mode inspects changed shell-specific files in the checkout. Text-shell
@@ -101,7 +102,7 @@ There are two different configuration layers by design.
 ### Git-tracked deployment settings
 
 `deploy/app.env` is for non-secret settings that should reach the server through
-normal Git pushes and cron-driven deploys. Today that mainly means:
+explicitly requested Git pushes and cron-driven deploys. Today that mainly means:
 
 - `GIZMOAPP_SHELL`
 
@@ -135,7 +136,7 @@ The deployment flow is intentionally split:
 
 1. one-time machine bootstrap
 2. per-instance install
-3. git push for later updates
+3. explicit git push for later updates
 
 This keeps the install model understandable while still allowing many derived
 apps to coexist on one server.
@@ -193,9 +194,9 @@ When extending the project:
 - preserve the shared design tokens in `static/app/base.css`
 - keep graphical features sprite/bitmap-first; direct polygon/ellipse drawing is
   for overlays, masks, debug visuals, or intentionally vector-simple work
-- assume UBC Vancouver for location-dependent defaults unless the user specifies
-  another location
-- use OpenStreetMap for mapping and scikit-learn for requested ML features
+- assume UBC Vancouver for requested location-dependent features only when the
+  user specifies no other location
+- use OpenStreetMap for requested mapping and scikit-learn for requested ML features
 - avoid introducing hidden build steps unless they are clearly worth the added
   operational cost
 - preserve prefix-aware routing and multi-app deployment assumptions

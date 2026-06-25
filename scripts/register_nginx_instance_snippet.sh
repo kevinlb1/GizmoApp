@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  ./scripts/register_nginx_instance_snippet.sh --name NAME --snippet PATH [options]
+  ALLOW_DEPLOY_ACTIONS=1 ./scripts/register_nginx_instance_snippet.sh --name NAME --snippet PATH [options]
 
 Copies one generated nginx location snippet into the managed include directory,
 then validates and reloads nginx. Use this after the one-time router bootstrap
@@ -52,6 +52,12 @@ if [[ -z "${NAME}" || -z "${SNIPPET}" ]]; then
   usage
   exit 1
 fi
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/require_explicit_approval.sh"
+require_any_explicit_approval \
+  "write nginx config under /etc and reload nginx with sudo" \
+  ALLOW_DEPLOY_ACTIONS
 
 if [[ ! -f "${SNIPPET}" ]]; then
   echo "Could not find snippet file: ${SNIPPET}" >&2

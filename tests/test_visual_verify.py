@@ -31,6 +31,26 @@ class VisualVerifyHelperTests(unittest.TestCase):
         self.assertFalse(result.ok)
         self.assertTrue(any("color variation" in failure for failure in result.failures))
 
+    def test_canvas_metrics_accept_intentionally_blank_canvas(self) -> None:
+        result = check_canvas_metrics(
+            {
+                "exists": True,
+                "readable": True,
+                "intentionalBlank": True,
+                "width": 800,
+                "height": 600,
+                "clientWidth": 800,
+                "clientHeight": 600,
+                "sampledPixels": 1000,
+                "visiblePixels": 1000,
+                "distinctColorBuckets": 1,
+                "luminanceVariance": 0.1,
+            }
+        )
+
+        self.assertTrue(result.ok)
+        self.assertTrue(any("intentionally blank" in warning for warning in result.warnings))
+
     def test_canvas_metrics_accept_rich_canvas(self) -> None:
         result = check_canvas_metrics(
             {

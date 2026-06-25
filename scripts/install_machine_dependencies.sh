@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/install_machine_dependencies.sh
+Usage: ALLOW_DEPLOY_ACTIONS=1 ./scripts/install_machine_dependencies.sh
 
 Installs the system packages required to host one or more GizmoApp deployments
 on a Debian/Ubuntu machine. Safe to re-run.
@@ -37,6 +37,12 @@ if (( ${#missing_packages[@]} == 0 )); then
   exit 0
 fi
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/require_explicit_approval.sh"
+require_any_explicit_approval \
+  "install host packages with apt and may require sudo" \
+  ALLOW_DEPLOY_ACTIONS
+
 if (( EUID == 0 )); then
   SUDO=()
 elif command -v sudo >/dev/null 2>&1; then
@@ -52,4 +58,3 @@ echo "Installing missing machine packages: ${missing_packages[*]}"
 "${SUDO[@]}" apt-get install -y "${missing_packages[@]}"
 
 echo "Machine dependencies are installed."
-

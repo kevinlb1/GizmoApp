@@ -4,8 +4,6 @@ from dataclasses import dataclass
 from importlib.util import find_spec
 from typing import Any
 
-from .mapping import DEFAULT_LOCATION, openstreetmap_config
-
 
 @dataclass(frozen=True)
 class Capability:
@@ -58,7 +56,7 @@ def capability_payload(api_base: str) -> dict[str, Any]:
         Capability(
             slug="mapping",
             label="Mapping",
-            description="Use OpenStreetMap tiles and assume UBC Vancouver as the default location.",
+            description="OpenStreetMap support is available when a derived app requests mapping.",
             status="ready",
             endpoint=f"{api_base}/map/default",
         ),
@@ -79,6 +77,4 @@ def capability_payload(api_base: str) -> dict[str, Any]:
     ]
     return {
         "capabilities": [capability.as_dict() for capability in capabilities],
-        "defaultLocation": DEFAULT_LOCATION,
-        "mapping": openstreetmap_config(),
     }

@@ -6,7 +6,6 @@ from pathlib import Path
 
 from flask import Flask, Response, abort, current_app, render_template, send_from_directory
 
-from .capabilities.mapping import DEFAULT_LOCATION
 from .config import scoped_path
 from .db import database_summary, fetch_sample_nodes, get_db
 
@@ -19,20 +18,8 @@ def _client_config() -> dict:
     prefix = current_app.config["URL_PREFIX"]
     return {
         "appName": current_app.config["APP_NAME"],
-        "tagline": current_app.config["APP_TAGLINE"],
-        "shell": current_app.config["APP_SHELL"],
-        "shellLabel": current_app.config["APP_SHELL_LABEL"],
-        "shellDescription": current_app.config["APP_SHELL_DESCRIPTION"],
-        "rootPath": scoped_path(prefix),
         "apiBase": scoped_path(prefix, "api"),
-        "capabilitiesUrl": scoped_path(prefix, "api/capabilities"),
-        "mapDefaultUrl": scoped_path(prefix, "api/map/default"),
-        "adminUrl": scoped_path(prefix, "admin/"),
-        "healthUrl": scoped_path(prefix, "healthz"),
         "serviceWorkerUrl": scoped_path(prefix, "sw.js"),
-        "manifestUrl": scoped_path(prefix, "manifest.webmanifest"),
-        "urlPrefix": prefix,
-        "defaultLocation": DEFAULT_LOCATION,
     }
 
 

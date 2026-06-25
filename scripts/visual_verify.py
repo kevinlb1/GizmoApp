@@ -36,6 +36,7 @@ CANVAS_METRICS_JS = """
   const base = {
     exists: true,
     readable: true,
+    intentionalBlank: canvas.dataset.intentionalBlank === "true",
     clientWidth: rect.width,
     clientHeight: rect.height,
     width: canvas.width,
@@ -128,6 +129,10 @@ def check_canvas_metrics(metrics: dict[str, Any]) -> CheckResult:
         warnings.append(f"canvas pixels could not be read: {metrics.get('error', 'unknown error')}")
         return CheckResult(failures, warnings)
 
+    if metrics.get("intentionalBlank"):
+        warnings.append("canvas is marked as an intentionally blank starter surface")
+        return CheckResult(failures, warnings)
+
     sampled_pixels = int(metrics.get("sampledPixels") or 0)
     visible_pixels = int(metrics.get("visiblePixels") or 0)
     distinct_color_buckets = int(metrics.get("distinctColorBuckets") or 0)
@@ -187,6 +192,7 @@ def wait_for_server(process: subprocess.Popen, url: str, timeout: float = 15.0) 
 def start_server(host: str, port: int, shell: str) -> subprocess.Popen:
     env = os.environ.copy()
     env["GIZMOAPP_SHELL"] = shell
+    env["ALLOW_SERVER_RUN"] = "1"
     env["PYTHONUNBUFFERED"] = "1"
     process = subprocess.Popen(
         [
@@ -270,8 +276,8 @@ def load_playwright():
     except ModuleNotFoundError as error:
         raise RuntimeError(
             "Playwright is required for visual verification. "
-            "Install it with: python -m pip install -r server/requirements-visual.txt "
-            "and then run: python -m playwright install chromium"
+            "Manual setup may need network access: run ALLOW_NETWORK_INSTALL=1 make visual-install "
+            "from a user-approved shell."
         ) from error
     return sync_playwright
 

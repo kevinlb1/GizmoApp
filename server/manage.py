@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 
 from gizmoapp_server import create_app
 from gizmoapp_server.db import database_summary, initialize_database
@@ -14,7 +15,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Manage the GizmoApp server.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    init_parser = subparsers.add_parser("init-db", help="Create tables and seed the sample rows.")
+    init_parser = subparsers.add_parser("init-db", help="Create tables for the blank starter app.")
     init_parser.add_argument("--shell", choices=shell_choices)
 
     describe_parser = subparsers.add_parser("describe", help="Print a short runtime summary.")
@@ -33,6 +34,13 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
+
+    if args.command == "run-dev" and os.environ.get("ALLOW_SERVER_RUN") != "1":
+        parser.exit(
+            2,
+            "run-dev starts the local development server. "
+            "Set ALLOW_SERVER_RUN=1 only when local serving is deliberate and explicitly approved.\n",
+        )
 
     app = create_app(shell_variant=getattr(args, "shell", None))
 

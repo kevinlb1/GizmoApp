@@ -1,4 +1,3 @@
-const GRID_SIZE = 44;
 const SPRITE_TEXTURE_SIZE = 160;
 
 
@@ -116,6 +115,7 @@ export class SceneRenderer {
     canvas.addEventListener("pointerdown", this.handlePointerDown);
     canvas.addEventListener("pointerleave", this.handlePointerLeave);
     this.resizeObserver.observe(canvas);
+    this.updateSceneState();
     this.resize();
     this.drawFrame(performance.now(), 0);
     this.animationFrame = window.requestAnimationFrame(this.render);
@@ -143,8 +143,14 @@ export class SceneRenderer {
     this.nodeSprites = Array.isArray(nodes)
       ? nodes.map((node) => this.createNodeSprite(node))
       : [];
-    this.canvas.dataset.spriteCount = String(this.nodeSprites.length);
+    this.updateSceneState();
     this.drawFrame(performance.now(), 0);
+  }
+
+  updateSceneState() {
+    const spriteCount = this.nodeSprites.length + this.sprites.length;
+    this.canvas.dataset.spriteCount = String(spriteCount);
+    this.canvas.dataset.intentionalBlank = spriteCount === 0 ? "true" : "false";
   }
 
   async loadTexture(name, url) {
@@ -167,6 +173,7 @@ export class SceneRenderer {
       rotation: 0,
       ...sprite,
     });
+    this.updateSceneState();
     this.drawFrame(performance.now(), 0);
   }
 
@@ -223,7 +230,6 @@ export class SceneRenderer {
     }
 
     this.drawBackdrop();
-    this.drawGrid();
     this.drawNodeSprites(timestamp);
     this.drawSprites();
     this.drawRipples(delta);
@@ -231,39 +237,8 @@ export class SceneRenderer {
   }
 
   drawBackdrop() {
-    const texture = this.textures.get("paper");
-    const pattern = this.context.createPattern(texture, "repeat");
-    this.context.fillStyle = pattern || "#fbfcf8";
+    this.context.fillStyle = "#fbfcf8";
     this.context.fillRect(0, 0, this.width, this.height);
-
-    const gradient = this.context.createLinearGradient(0, 0, this.width, this.height);
-    gradient.addColorStop(0, "rgba(18, 118, 111, 0.14)");
-    gradient.addColorStop(0.5, "rgba(255, 255, 255, 0.2)");
-    gradient.addColorStop(1, "rgba(184, 95, 58, 0.12)");
-    this.context.fillStyle = gradient;
-    this.context.fillRect(0, 0, this.width, this.height);
-  }
-
-  drawGrid() {
-    this.context.save();
-    this.context.strokeStyle = "rgba(39, 49, 43, 0.09)";
-    this.context.lineWidth = 1;
-
-    for (let x = GRID_SIZE; x < this.width; x += GRID_SIZE) {
-      this.context.beginPath();
-      this.context.moveTo(x, 0);
-      this.context.lineTo(x, this.height);
-      this.context.stroke();
-    }
-
-    for (let y = GRID_SIZE; y < this.height; y += GRID_SIZE) {
-      this.context.beginPath();
-      this.context.moveTo(0, y);
-      this.context.lineTo(this.width, y);
-      this.context.stroke();
-    }
-
-    this.context.restore();
   }
 
   drawNodeSprites(timestamp) {

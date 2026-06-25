@@ -22,27 +22,21 @@ SLUG_RE = re.compile(r"^[a-z0-9-]{3,40}$")
 def _health_payload() -> dict:
     return {
         "status": "ok",
-        "database": "ok",
         "serverTime": datetime.now(UTC).isoformat(),
     }
 
 
 def _bootstrap_payload() -> dict:
-    connection = get_db()
-    api_base = scoped_path(current_app.config["URL_PREFIX"], "api").rstrip("/")
     return {
         "app": {
             "name": current_app.config["APP_NAME"],
             "tagline": current_app.config["APP_TAGLINE"],
-            "urlPrefix": current_app.config["URL_PREFIX"],
             "mode": "public",
             "shell": current_app.config["APP_SHELL"],
             "shellLabel": current_app.config["APP_SHELL_LABEL"],
         },
         "health": _health_payload(),
         "availableShells": current_app.config["AVAILABLE_SHELLS"],
-        "capabilitySummary": capability_payload(api_base),
-        "sampleNodes": fetch_sample_nodes(connection),
     }
 
 

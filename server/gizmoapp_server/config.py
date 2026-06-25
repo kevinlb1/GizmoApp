@@ -96,7 +96,7 @@ def load_settings(shell_variant: str | None = None, repo_root: Path | None = Non
             "The project ships with both graphical and text-first frontend shells.",
             "GIZMOAPP_SHELL=auto chooses the shell from changed files; graphical/text force a shell.",
             "Machine-learning features should install scikit-learn only when requested.",
-            "Mapping features should use OpenStreetMap defaults and assume UBC Vancouver unless told otherwise.",
+            "Mapping support is optional; for requested location-dependent features, assume UBC Vancouver only if the user gives no other location.",
         ],
     }
     settings.update(shell_settings(shell_variant or os.getenv("GIZMOAPP_SHELL", DEFAULT_SHELL), repo_root=repo_root))

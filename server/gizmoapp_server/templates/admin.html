@@ -87,6 +87,8 @@
           <ul class="admin-list">
             {% for node in sample_nodes %}
             <li>{{ node.label }}: {{ node.description }}</li>
+            {% else %}
+            <li>No sample records have been added.</li>
             {% endfor %}
           </ul>
         </section>

@@ -1,5 +1,10 @@
 # Non-Scaffold App Deployment
 
+The commands in this file are manual host-maintenance commands. They may use
+`sudo`, contact the network, reload nginx, or write outside the repository.
+Coding agents should not run them unless the user explicitly asks for that
+deployment action in the current turn.
+
 This file explains how to deploy and maintain apps on `vickrey10.cs.ubc.ca`
 that do **not** use the GizmoApp scaffold.
 
@@ -72,18 +77,8 @@ location /myapp/ {
 }
 ```
 
-Then run:
-
-```bash
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-Then verify:
-
-```bash
-curl -sS -D - http://vickrey10.cs.ubc.ca/myapp/ -o /dev/null
-```
+Then manually validate nginx, reload it, and verify the route with a browser or
+an explicit server-side `GET` request.
 
 Use `GET`, not `HEAD`, when validating older apps. Some apps may respond
 correctly to browser `GET` requests while still returning `404` for `HEAD`.

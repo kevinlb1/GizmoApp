@@ -4,14 +4,14 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  deploy_gizmoapp_repo.sh REPO_URL [options]
+  ALLOW_DEPLOY_ACTIONS=1 deploy_gizmoapp_repo.sh REPO_URL [options]
 
 Deploy a GizmoApp-derived repository by repo URL alone.
 The app name, checkout directory, and URL prefix are inferred from the repo name.
 
 Examples:
-  deploy_gizmoapp_repo.sh git@github.com:kevinlb1/GizmoAppKLB1.git
-  deploy_gizmoapp_repo.sh https://github.com/kevinlb1/GizmoAppKLB1.git --shell text
+  ALLOW_DEPLOY_ACTIONS=1 deploy_gizmoapp_repo.sh git@github.com:kevinlb1/GizmoAppKLB1.git
+  ALLOW_DEPLOY_ACTIONS=1 deploy_gizmoapp_repo.sh https://github.com/kevinlb1/GizmoAppKLB1.git --shell text
 
 Defaults:
   controller dir: /home/kevinlb/bin/GizmoApp
@@ -102,6 +102,12 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/require_explicit_approval.sh"
+require_any_explicit_approval \
+  "deploy a repository by invoking the instance installer" \
+  ALLOW_DEPLOY_ACTIONS
 
 INSTALL_SCRIPT="${CONTROLLER_DIR}/scripts/install_deployment_instance.sh"
 if [[ ! -x "${INSTALL_SCRIPT}" ]]; then

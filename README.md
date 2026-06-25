@@ -3,7 +3,7 @@
 GizmoApp is a blank webapp template repository intended to be easy for later Codex edits. It ships with:
 
 - A Python `Flask` backend that serves both the app shell and JSON API
-- A lightweight SQLite data store with migrations, app state tables, and sample rows
+- A lightweight SQLite data store with migrations and app state tables
 - A touch-friendly graphical shell with sprite/bitmap-first rendering and layered texture support
 - A minimal text-first shell with the same responsive app frame
 - Lazy capability APIs for audio analysis, search, optimization, mapping, and optional machine learning
@@ -23,7 +23,7 @@ The scaffold intentionally avoids Node and a frontend bundler. That keeps deploy
 - `deploy/` contains example `gunicorn`, `nginx`, and cron snippets
 - `docs/design-overview.md` records the intended architecture, config split, and deployment model
 - `docs/agent-extension-guide.md` gives future coding agents concrete extension rules
-- `deploy/app.env` contains git-tracked deployment settings that should reach the server through normal pushes
+- `deploy/app.env` contains git-tracked deployment settings that should reach the server only through an explicitly requested push/deploy flow
 - `deploy/non-scaffold-app-deployment.md` explains how existing non-GizmoApp apps should fit into the neutral nginx host layout
 - `tests/` contains API and routing smoke tests
 
@@ -53,7 +53,7 @@ This split is meant to support multiple independent apps derived from this start
 2. Create the virtualenv and install dependencies:
 
 ```bash
-make install
+ALLOW_NETWORK_INSTALL=1 make install
 ```
 
 3. Initialize the SQLite database:
@@ -65,15 +65,15 @@ make init-db
 4. Run the development server:
 
 ```bash
-make dev
+ALLOW_SERVER_RUN=1 make dev
 ```
 
 Or start a specific shell explicitly:
 
 ```bash
-make dev-auto
-make dev-graphical
-make dev-text
+ALLOW_SERVER_RUN=1 make dev-auto
+ALLOW_SERVER_RUN=1 make dev-graphical
+ALLOW_SERVER_RUN=1 make dev-text
 ```
 
 The development commands now auto-read `deploy/app.env` and then a repo-root `.env`. The default app URL is `http://127.0.0.1:8001/` unless you set `GIZMOAPP_URL_PREFIX`, in which case the app lives under that prefix.
@@ -84,12 +84,12 @@ Run the repo-standard validation entry point with:
 make validate
 ```
 
-The helper uses `.venv` when available and otherwise installs requirements into a repo-local fallback directory before running the Python unit tests.
+The helper uses `.venv`, system packages, or `.pydeps/` when they already exist. It does not install packages automatically, so it stays safe for escalation-free agent runs.
 
 Machine-learning features should install the optional scikit-learn dependency only when an app actually needs ML:
 
 ```bash
-.venv/bin/pip install -r server/requirements-ml.txt
+ALLOW_NETWORK_INSTALL=1 make install-ml
 ```
 
 ## Visual Verification
@@ -98,20 +98,20 @@ Graphics work should be checked with a browser screenshot pass before it is trea
 as finished. The visual pipeline is optional so the base app stays lean:
 
 ```bash
-make visual-install
-make visual-check
+ALLOW_NETWORK_INSTALL=1 make visual-install
+ALLOW_BROWSER_CHECK=1 make visual-check
 ```
 
-`make visual-check` starts the graphical shell, captures phone, tablet, and
-desktop screenshots, checks that `#scene-canvas` is nonblank, and writes:
+The install step may need network access, and the check step starts browser/server automation. Agents should run them only when that work is already permitted or the user explicitly asks for it. `make visual-check` starts the graphical shell, captures phone, tablet, and
+desktop screenshots, checks that `#scene-canvas` is rendered, and writes:
 
 - `var/visual-report/index.html`
 - `var/visual-report/report.json`
 - `var/visual-report/graphical-*.png`
 
-Open the HTML report and inspect the screenshots. Pixel checks can catch blank or
-flat canvases, but they do not replace human review of whether the graphics look
-good.
+Open the HTML report and inspect the screenshots. Pixel checks can catch broken
+or unintentionally flat canvases, while the starter canvas may explicitly mark
+itself as intentionally blank.
 
 ## Shell Selection
 
@@ -144,28 +144,28 @@ For template-derived apps, the intended workflow is:
 
 - complete a task
 - commit it with a descriptive message
-- push it so the deployment cron job can pick it up, unless the user explicitly wants to keep the work local
+- push it so the deployment cron job can pick it up only when the user explicitly asks for the push or deploy flow
 - if the task installs or generates local-only files that do not belong in the repo, add them to `.gitignore`
 
 For deployed template-derived apps, prefer this split:
 
-- `deploy/app.env` is git-tracked and should hold non-secret runtime choices you want to reach the server through normal `git push` plus cron deploys
+- `deploy/app.env` is git-tracked and should hold non-secret runtime choices you want to reach the server through an explicit `git push` plus cron deploy flow
 - `.env` on the server is machine-specific and should hold secrets, ports, DB paths, service names, and per-instance URL prefixes
 
-For example, forcing a change from the text shell to the graphical shell should normally mean editing `deploy/app.env`, committing, and pushing, not SSHing into the server to edit `.env`.
+For example, forcing a change from the text shell to the graphical shell should normally mean editing `deploy/app.env`, then committing and pushing only as part of an explicitly requested deploy flow, not SSHing into the server to edit `.env`.
 
 ## API Surface
 
-- `GET /api/bootstrap` returns app metadata, health details, and the seeded sample nodes
+- `GET /api/bootstrap` returns app metadata, health details, and available capability summaries
 - `GET /api/capabilities` returns available capability modules and optional dependency status
 - `GET /api/search?q=...` searches persisted sample records in SQLite
-- `GET /api/map/default` returns OpenStreetMap settings and the default UBC Vancouver location
+- `GET /api/map/default` returns OpenStreetMap settings and the default UBC Vancouver location when mapping is requested
 - `GET /api/ml/status` reports whether scikit-learn is installed
 - `POST /api/ml/kmeans` runs a small scikit-learn KMeans job when ML dependencies are installed
 - `POST /api/optimize/route` runs a simple route ordering optimization
 - `POST /api/audio/analyze` summarizes browser-captured sample arrays
-- `GET /api/sample-nodes` lists the sample rows from SQLite
-- `POST /api/sample-nodes` inserts a sample row for future experimentation
+- `GET /api/sample-nodes` lists optional sample records from SQLite
+- `POST /api/sample-nodes` inserts an optional sample record for future experimentation
 - `GET /healthz` returns a simple JSON health response
 - `GET /admin/` shows a small admin summary page
 
@@ -173,12 +173,14 @@ If `GIZMOAPP_URL_PREFIX` is set, all of those routes live under the prefix. For 
 
 ## Deployment Notes
 
+The commands in this section are manual deployment actions. They may install packages, use `sudo`, write outside the checkout, contact GitHub, edit nginx, reload services, or change cron. Coding agents should not run them unless the user explicitly asks for that deployment action in the current turn.
+
 ### One-time machine bootstrap
 
 Run this once per deployment machine:
 
 ```bash
-./scripts/install_machine_dependencies.sh
+ALLOW_DEPLOY_ACTIONS=1 ./scripts/install_machine_dependencies.sh
 ```
 
 This installs the required Ubuntu/Debian packages such as Python, `python3-venv`, Git, SQLite, curl, and cron.
@@ -189,7 +191,7 @@ If you want future app installs to become one command with no manual nginx edits
 run this once on the server:
 
 ```bash
-./scripts/install_nginx_instance_router.sh \
+ALLOW_DEPLOY_ACTIONS=1 ./scripts/install_nginx_instance_router.sh \
   --server-config /etc/nginx/sites-enabled/vickrey10 \
   --server-name vickrey10.cs.ubc.ca
 ```
@@ -204,7 +206,7 @@ line but the file itself is clearly the right site config and contains only one
 file:
 
 ```bash
-./scripts/install_nginx_instance_router.sh \
+ALLOW_DEPLOY_ACTIONS=1 ./scripts/install_nginx_instance_router.sh \
   --server-config /etc/nginx/sites-enabled/vickrey10
 ```
 
@@ -236,49 +238,27 @@ If the current live path `/AI100` is still served from an nginx file named
 `/etc/nginx/sites-enabled/ai100`, migrate in this order so `/AI100` keeps
 working throughout:
 
-1. Create the managed snippet directory once:
-
-```bash
-sudo install -d -m 755 /etc/nginx/gizmoapp-instances
-```
+1. Create the managed snippet directory once. This is a manual server-admin step
+   that writes under `/etc/nginx`.
 
 2. Create `/etc/nginx/gizmoapp-instances/AI100.conf` containing the existing
 `/AI100` location block. If `~/bin/AI100` is based on this scaffold, you can
 reuse its generated snippet or match the existing live config exactly.
 
-3. Create a neutral host config file from `deploy/nginx-host.example.conf`, for example:
+3. Create a neutral host config file from `deploy/nginx-host.example.conf`.
 
-```bash
-sudo cp /home/kevinlb/bin/GizmoApp/deploy/nginx-host.example.conf /etc/nginx/sites-available/vickrey10
-```
+4. Adjust the copied host file if needed for your host-level defaults, then enable it.
 
-4. Adjust the copied host file if needed for your host-level defaults, then enable it:
-
-```bash
-sudo ln -s /etc/nginx/sites-available/vickrey10 /etc/nginx/sites-enabled/vickrey10
-```
-
-5. Validate before removing the old file:
-
-```bash
-sudo nginx -t
-curl -sS -D - http://vickrey10.cs.ubc.ca/AI100/ -o /dev/null
-```
+5. Validate nginx and confirm `/AI100/` still responds before removing the old file.
 
 6. Only after `/AI100/` still works through the new host file, disable the old
-app-named site file if it is no longer needed:
-
-```bash
-sudo rm /etc/nginx/sites-enabled/ai100
-sudo nginx -t
-sudo systemctl reload nginx
-```
+app-named site file if it is no longer needed, validate nginx again, and reload it.
 
 After that migration, run the one-time router bootstrap against the neutral host file:
 
 ```bash
 cd /home/kevinlb/bin/GizmoApp
-./scripts/install_nginx_instance_router.sh \
+ALLOW_DEPLOY_ACTIONS=1 ./scripts/install_nginx_instance_router.sh \
   --server-config /etc/nginx/sites-enabled/vickrey10
 ```
 
@@ -289,7 +269,7 @@ For the current server, a more direct migration helper is available:
 
 ```bash
 cd /home/kevinlb/bin/GizmoApp
-./scripts/migrate_nginx_to_neutral_host.sh
+ALLOW_DEPLOY_ACTIONS=1 ./scripts/migrate_nginx_to_neutral_host.sh
 ```
 
 That helper is tailored to the existing `ai100` to `vickrey10` rename and will:
@@ -310,7 +290,7 @@ If you have already-installed app instances that predate automatic nginx
 registration, register them once with:
 
 ```bash
-./scripts/register_nginx_instance_snippet.sh \
+ALLOW_DEPLOY_ACTIONS=1 ./scripts/register_nginx_instance_snippet.sh \
   --name gizmotest \
   --snippet /home/kevinlb/bin/gizmotest/var/generated/nginx-location.conf
 ```
@@ -320,7 +300,7 @@ registration, register them once with:
 If the current checkout is itself the live deployment checkout, run:
 
 ```bash
-./scripts/install_server.sh
+ALLOW_DEPLOY_ACTIONS=1 ./scripts/install_server.sh
 ```
 
 That convenience wrapper runs both the machine bootstrap and the current-checkout initialization.
@@ -328,7 +308,7 @@ That convenience wrapper runs both the machine bootstrap and the current-checkou
 If machine dependencies are already installed and you only want to initialize the current checkout, run:
 
 ```bash
-./scripts/install_checkout.sh
+ALLOW_NETWORK_INSTALL=1 ./scripts/install_checkout.sh
 ```
 
 That script also normalizes `.env` to owner-only permissions so secrets do not stay world-readable on shared machines, and merges any git-tracked settings from `deploy/app.env` into the live `.env`.
@@ -338,7 +318,7 @@ That script also normalizes `.env` to owner-only permissions so secrets do not s
 After a derived repo exists on GitHub, install it onto the server with:
 
 ```bash
-./scripts/install_deployment_instance.sh \
+ALLOW_DEPLOY_ACTIONS=1 ./scripts/install_deployment_instance.sh \
   --name myapp \
   --repo-url git@github.com:YOUR_ACCOUNT/YOUR_REPO.git \
   --branch main \
@@ -367,7 +347,7 @@ The default public URL becomes `http://vickrey10.cs.ubc.ca/myapp/`.
 If you want a one-argument deployment command, use:
 
 ```bash
-./scripts/deploy_gizmoapp_repo.sh git@github.com:YOUR_ACCOUNT/YOUR_REPO.git
+ALLOW_DEPLOY_ACTIONS=1 ./scripts/deploy_gizmoapp_repo.sh git@github.com:YOUR_ACCOUNT/YOUR_REPO.git
 ```
 
 That wrapper:
@@ -377,58 +357,44 @@ That wrapper:
 - serves it at `http://vickrey10.cs.ubc.ca/<repo-name>/`
 - uses the shell declared in `deploy/app.env`, or falls back to `auto` if that file does not set one
 - installs the per-minute git deploy cron job
-- registers the nginx route automatically if the one-time router bootstrap has been run
+- registers the nginx route during the approved deploy action if the one-time router bootstrap has been run
 
 For example:
 
 ```bash
-./scripts/deploy_gizmoapp_repo.sh git@github.com:kevinlb1/GizmoAppKLB1.git
+ALLOW_DEPLOY_ACTIONS=1 ./scripts/deploy_gizmoapp_repo.sh git@github.com:kevinlb1/GizmoAppKLB1.git
 ```
 
-To make this easy to run from anywhere on the server, copy it once into `~/bin`:
-
-```bash
-install -m 755 /home/kevinlb/bin/GizmoApp/scripts/deploy_gizmoapp_repo.sh ~/bin/deploy-gizmoapp-repo
-```
+To make this easy to run from anywhere on the server, a server administrator can
+copy `scripts/deploy_gizmoapp_repo.sh` into `~/bin/deploy-gizmoapp-repo`.
 
 Then future installs become:
 
 ```bash
-~/bin/deploy-gizmoapp-repo git@github.com:YOUR_ACCOUNT/YOUR_REPO.git
+ALLOW_DEPLOY_ACTIONS=1 ~/bin/deploy-gizmoapp-repo git@github.com:YOUR_ACCOUNT/YOUR_REPO.git
 ```
 
 Optional overrides:
 
 ```bash
-~/bin/deploy-gizmoapp-repo git@github.com:YOUR_ACCOUNT/YOUR_REPO.git --shell text
-~/bin/deploy-gizmoapp-repo git@github.com:YOUR_ACCOUNT/YOUR_REPO.git --branch develop
+ALLOW_DEPLOY_ACTIONS=1 ~/bin/deploy-gizmoapp-repo git@github.com:YOUR_ACCOUNT/YOUR_REPO.git --shell text
+ALLOW_DEPLOY_ACTIONS=1 ~/bin/deploy-gizmoapp-repo git@github.com:YOUR_ACCOUNT/YOUR_REPO.git --branch develop
 ```
 
 ### After running `install_deployment_instance.sh`
 
 1. Review `/home/kevinlb/bin/myapp/.env`.
    Treat it as machine-specific state, not the normal place for app-level settings that should come from git.
-2. If you already ran `install_nginx_instance_router.sh`, nginx is updated automatically and you can skip to checking the service.
+2. If you already ran `install_nginx_instance_router.sh`, the approved installer updates nginx and you can skip to checking the service.
 3. If you did not run the one-time router bootstrap, add the generated nginx snippet from `/home/kevinlb/bin/myapp/var/generated/nginx-location.conf` to the `vickrey10.cs.ubc.ca` nginx server block.
-4. Reload nginx:
+4. Reload nginx manually on the server if you edited the host config.
 
-```bash
-sudo systemctl reload nginx
-```
-
-5. Check the user service:
-
-```bash
-systemctl --user status myapp.service
-```
+5. Check the user service on the server.
 
 6. Visit `http://vickrey10.cs.ubc.ca/myapp/`.
 
-If the app should stay running even when the deployment user is logged out, a privileged user may also need to run:
-
-```bash
-sudo loginctl enable-linger kevinlb
-```
+If the app should stay running even when the deployment user is logged out, a
+privileged user may also need to enable linger for the deployment account.
 
 ### `gunicorn` reload behavior
 
@@ -449,7 +415,7 @@ If a pushed commit changes `deploy/app.env`, the deploy script restarts the user
 
 The installed cron entry also exports `XDG_RUNTIME_DIR` and `DBUS_SESSION_BUS_ADDRESS` so `systemctl --user` can talk to the user systemd bus even when the deploy runs from cron.
 
-When you use `scripts/install_deployment_instance.sh`, the script installs a real cron entry for that specific checkout automatically unless you pass `--skip-cron`.
+When you use `scripts/install_deployment_instance.sh` with `ALLOW_DEPLOY_ACTIONS=1`, the script installs a real cron entry for that specific checkout unless you pass `--skip-cron`.
 
 If you have older app installs that were created before this cron hardening, re-run `scripts/install_deployment_instance.sh` for that app or update the crontab entry so it includes those two environment variables before calling `scripts/deploy_from_git.sh`.
 

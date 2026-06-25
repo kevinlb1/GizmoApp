@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  ./scripts/install_deployment_instance.sh --name NAME --repo-url URL [options]
+  ALLOW_DEPLOY_ACTIONS=1 ./scripts/install_deployment_instance.sh --name NAME --repo-url URL [options]
 
 Creates or updates a deployable checkout for one app instance under
   /home/kevinlb/bin/NAME
@@ -214,6 +214,11 @@ if [[ -z "${NAME}" || -z "${REPO_URL}" ]]; then
   exit 1
 fi
 
+source "${SCRIPT_DIR}/require_explicit_approval.sh"
+require_any_explicit_approval \
+  "clone/fetch repositories, write outside the checkout, install packages, edit cron, and manage user services" \
+  ALLOW_DEPLOY_ACTIONS
+
 if [[ ! "${NAME}" =~ ^[A-Za-z0-9_-]+$ ]]; then
   echo "--name must contain only letters, digits, hyphens, or underscores." >&2
   exit 1
@@ -364,7 +369,7 @@ if command -v loginctl >/dev/null 2>&1; then
   fi
 fi
 
-CRON_LINE="* * * * * cd ${APP_DIR} && XDG_RUNTIME_DIR=${USER_RUNTIME_DIR} DBUS_SESSION_BUS_ADDRESS=unix:path=${USER_RUNTIME_DIR}/bus ${APP_DIR}/scripts/deploy_from_git.sh >> ${APP_DIR}/var/log/deploy-cron.log 2>&1"
+CRON_LINE="* * * * * cd ${APP_DIR} && ALLOW_DEPLOY_ACTIONS=1 XDG_RUNTIME_DIR=${USER_RUNTIME_DIR} DBUS_SESSION_BUS_ADDRESS=unix:path=${USER_RUNTIME_DIR}/bus ${APP_DIR}/scripts/deploy_from_git.sh >> ${APP_DIR}/var/log/deploy-cron.log 2>&1"
 if (( SKIP_CRON == 0 )); then
   install_cron_entry "${CRON_LINE}"
 else

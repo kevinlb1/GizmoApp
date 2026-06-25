@@ -9,7 +9,7 @@ def sklearn_status() -> dict[str, Any]:
     return {
         "available": available,
         "package": "scikit-learn",
-        "installCommand": "python -m pip install -r server/requirements-ml.txt",
+        "installCommand": "ALLOW_NETWORK_INSTALL=1 make install-ml",
     }
 
 

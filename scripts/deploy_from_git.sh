@@ -4,7 +4,12 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_HELPER="${ROOT_DIR}/scripts/envfile.py"
 SYNC_DEPLOY_ENV="${ROOT_DIR}/scripts/sync_deploy_env.sh"
+source "${ROOT_DIR}/scripts/require_explicit_approval.sh"
 cd "${ROOT_DIR}"
+
+require_any_explicit_approval \
+  "fetch from Git, merge remote changes, install changed dependencies, and reload services" \
+  ALLOW_DEPLOY_ACTIONS
 
 ensure_user_systemd_env() {
   if [[ -z "${XDG_RUNTIME_DIR:-}" ]]; then

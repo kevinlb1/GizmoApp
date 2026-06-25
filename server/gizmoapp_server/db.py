@@ -37,13 +37,6 @@ CREATE TABLE IF NOT EXISTS app_events (
 """,
 }
 
-SEED_ROWS = [
-    ("compass", "Compass", "Sample navigation node for future interactions.", "#72d1c2", 0.24, 0.38, 0.11),
-    ("harbor", "Harbor", "Sample content node anchored to the blank scene.", "#f59a62", 0.57, 0.63, 0.13),
-    ("signal", "Signal", "Sample status node seeded from SQLite.", "#f0cf87", 0.77, 0.31, 0.1),
-]
-
-
 def _connect(db_path: str) -> sqlite3.Connection:
     connection = sqlite3.connect(db_path)
     connection.row_factory = sqlite3.Row
@@ -97,15 +90,6 @@ def initialize_database(config: dict) -> None:
     connection = _connect(str(config["DB_PATH"]))
     try:
         _apply_migrations(connection)
-        existing = connection.execute("SELECT COUNT(*) FROM sample_nodes").fetchone()[0]
-        if existing == 0:
-            connection.executemany(
-                """
-                INSERT INTO sample_nodes (slug, label, description, accent_color, x, y, radius)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                """,
-                SEED_ROWS,
-            )
         connection.commit()
     finally:
         connection.close()

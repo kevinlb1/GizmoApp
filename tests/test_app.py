@@ -27,7 +27,7 @@ class GizmoAppTestCase(unittest.TestCase):
         if temp_dir is not None:
             temp_dir.cleanup()
 
-    def test_bootstrap_endpoint_returns_seed_data(self):
+    def test_bootstrap_endpoint_returns_blank_app_metadata(self):
         app = self.make_app("/demo-app")
         client = app.test_client()
 
@@ -35,10 +35,11 @@ class GizmoAppTestCase(unittest.TestCase):
         payload = response.get_json()
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(payload["app"]["urlPrefix"], "/demo-app")
         self.assertEqual(payload["app"]["shell"], "graphical")
-        self.assertEqual(payload["capabilitySummary"]["defaultLocation"]["label"], "UBC Vancouver")
-        self.assertGreaterEqual(len(payload["sampleNodes"]), 3)
+        self.assertNotIn("urlPrefix", payload["app"])
+        self.assertNotIn("capabilitySummary", payload)
+        self.assertNotIn("sampleNodes", payload)
+        self.assertNotIn("database", payload["health"])
 
     def test_manifest_uses_configured_prefix(self):
         app = self.make_app("/demo-app")
@@ -72,7 +73,7 @@ class GizmoAppTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(payload["sampleNode"]["slug"], "new-node")
 
-    def test_capabilities_include_optional_ml_and_openstreetmap_defaults(self):
+    def test_capabilities_include_optional_ml_and_mapping_without_global_location_default(self):
         app = self.make_app("")
         client = app.test_client()
 
@@ -83,12 +84,25 @@ class GizmoAppTestCase(unittest.TestCase):
         slugs = {capability["slug"] for capability in payload["capabilities"]}
         self.assertIn("machine-learning", slugs)
         self.assertIn("mapping", slugs)
-        self.assertEqual(payload["mapping"]["provider"], "openstreetmap")
-        self.assertEqual(payload["defaultLocation"]["label"], "UBC Vancouver")
+        self.assertNotIn("mapping", payload)
+        self.assertNotIn("defaultLocation", payload)
 
     def test_search_endpoint_queries_persistent_records(self):
         app = self.make_app("")
         client = app.test_client()
+
+        client.post(
+            "/api/sample-nodes",
+            json={
+                "slug": "compass",
+                "label": "Compass",
+                "description": "Inserted by the test suite.",
+                "accent_color": "#72d1c2",
+                "x": 0.25,
+                "y": 0.4,
+                "radius": 0.1,
+            },
+        )
 
         response = client.get("/api/search?q=compass")
         payload = response.get_json()
@@ -96,6 +110,16 @@ class GizmoAppTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(payload["source"], "sqlite")
         self.assertEqual(payload["results"][0]["slug"], "compass")
+
+    def test_sample_node_api_starts_empty(self):
+        app = self.make_app("")
+        client = app.test_client()
+
+        response = client.get("/api/sample-nodes")
+        payload = response.get_json()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload["sampleNodes"], [])
 
     def test_audio_analysis_endpoint_summarizes_samples(self):
         app = self.make_app("")
@@ -154,8 +178,11 @@ class GizmoAppTestCase(unittest.TestCase):
         html = response.get_data(as_text=True)
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn("Graphical canvas", html)
+        self.assertIn("Blank graphical workspace", html)
         self.assertIn("base.css", html)
+        self.assertNotIn("UBC Vancouver", html)
+        self.assertNotIn("Map", html)
+        self.assertNotIn("DB", html)
 
     def test_text_index_renders_without_prefix(self):
         app = self.make_app("", shell_variant="text")
@@ -167,6 +194,9 @@ class GizmoAppTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("Text workspace", html)
         self.assertIn("base.css", html)
+        self.assertNotIn("UBC Vancouver", html)
+        self.assertNotIn("Database", html)
+        self.assertNotIn("Location", html)
 
 
 if __name__ == "__main__":

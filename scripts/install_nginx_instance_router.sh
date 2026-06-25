@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  ./scripts/install_nginx_instance_router.sh --server-config PATH [options]
+  ALLOW_DEPLOY_ACTIONS=1 ./scripts/install_nginx_instance_router.sh --server-config PATH [options]
 
 Bootstraps nginx once so future GizmoApp deployments can register themselves
 with a single install command and no manual nginx file edits.
@@ -55,6 +55,11 @@ if [[ -z "${SERVER_CONFIG}" ]]; then
   exit 1
 fi
 
+source "${SCRIPT_DIR}/require_explicit_approval.sh"
+require_any_explicit_approval \
+  "write nginx config under /etc and reload nginx with sudo" \
+  ALLOW_DEPLOY_ACTIONS
+
 if [[ ! -f "${BOOTSTRAP_HELPER}" ]]; then
   echo "Missing ${BOOTSTRAP_HELPER}" >&2
   exit 1
@@ -90,4 +95,4 @@ echo "Managed snippet directory: ${MANAGED_DIR}"
 echo "Updated server config: ${SERVER_CONFIG}"
 echo
 echo "Future deployments can now register nginx automatically from:"
-echo "  ./scripts/install_deployment_instance.sh --name myapp --repo-url git@github.com:YOU/REPO.git"
+echo "  ALLOW_DEPLOY_ACTIONS=1 ./scripts/install_deployment_instance.sh --name myapp --repo-url git@github.com:YOU/REPO.git"

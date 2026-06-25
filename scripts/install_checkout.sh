@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/install_checkout.sh
+Usage: ALLOW_NETWORK_INSTALL=1 ./scripts/install_checkout.sh
 
 Initializes the current checkout for local serving on a machine that already has
 system dependencies installed. Safe to re-run.
@@ -18,7 +18,12 @@ fi
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_HELPER="${ROOT_DIR}/scripts/envfile.py"
 SYNC_DEPLOY_ENV="${ROOT_DIR}/scripts/sync_deploy_env.sh"
+source "${ROOT_DIR}/scripts/require_explicit_approval.sh"
 cd "${ROOT_DIR}"
+
+require_any_explicit_approval \
+  "create or update a virtualenv, install Python packages, and write local runtime files" \
+  ALLOW_NETWORK_INSTALL ALLOW_DEPLOY_ACTIONS
 
 if [[ ! -f "${ROOT_DIR}/.env.example" ]]; then
   echo "Missing .env.example in ${ROOT_DIR}" >&2
