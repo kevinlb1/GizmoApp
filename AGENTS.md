@@ -2,7 +2,7 @@
 
 ## Workflow Rules
 1. When a task is complete, `git commit` the changes with a descriptive commit message.
-2. For apps built from this template, `git push` completed work after committing unless the user explicitly wants the work kept local.
+2. Standing user instruction for this repository: after committing completed work, automatically `git push` it to the configured GitHub remote unless the user explicitly asks to keep the work local or not to push.
 3. Update this `AGENTS.md` whenever a task changes important operational, deployment, workflow, or safety context.
 4. Prefer changes that make future Codex edits easy: keep structure explicit, keep files reasonably small, and avoid unnecessary complexity.
 5. If Git author identity is missing, prefer configuring a repo-local identity instead of changing global Git settings without explicit user direction.
@@ -92,7 +92,7 @@
 - Preserve deployability while editing: if runtime behavior, dependencies, routes, or operational steps change, update `README.md` and this file.
 - Keep local install artifacts and machine-specific files out of Git; update `.gitignore` when new ones appear.
 - Before saying validation is blocked by missing local Python packages, run `make validate`. That helper should reuse `.venv` when present or install repo-local fallback deps into `.pydeps/` and run the `unittest` suite without asking the user to intervene.
-- After completing work, run the relevant validation you can run locally and then commit without pushing.
+- After completing work, run the relevant validation you can run locally, commit, and push automatically unless the user explicitly asks not to push.
 
 ## Non-Expert User Support
 - Use plain language when describing choices, especially around shell selection, deployment, gunicorn, nginx, cron, and SQLite.
@@ -182,7 +182,7 @@
 - When adding starter-friendly functionality, keep rebranding effort low: avoid scattering project-name-specific strings through shared logic unless necessary.
 
 ## Safety Guidance
-- Do not push to the remote unless the user explicitly asks for it.
+- The user has explicitly requested automatic pushes for this repository. Push completed commits by default unless the user explicitly asks not to push.
 - Avoid making irreversible server or deployment changes without clear user direction.
 - Treat HTTPS as a practical requirement for reliable PWA installation, especially on iPhone and Chromium-based browsers.
 
