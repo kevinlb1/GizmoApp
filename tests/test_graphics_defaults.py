@@ -12,7 +12,11 @@ class GraphicsDefaultsTests(unittest.TestCase):
     def test_scene_renderer_defaults_to_bitmap_sprites(self) -> None:
         source = SCENE_JS.read_text(encoding="utf-8")
 
-        self.assertIn("function createSpriteTexture", source)
+        self.assertIn(
+            "function createSpriteTexture",
+            source,
+            "Keep createSpriteTexture as the test-backed sprite/bitmap helper name unless the contract changes.",
+        )
         self.assertIn("this.nodeSprites", source)
         self.assertIn("this.context.drawImage", source)
         self.assertIn("createNodeSprite", source)

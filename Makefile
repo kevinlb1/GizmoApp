@@ -4,7 +4,7 @@ ALLOW_NETWORK_INSTALL ?= 0
 ALLOW_BROWSER_CHECK ?= 0
 ALLOW_SERVER_RUN ?= 0
 
-.PHONY: install install-ml init-db dev dev-auto dev-graphical dev-text test validate visual-install visual-check generate-icons require-network-install require-browser-check require-server-run
+.PHONY: install install-ml init-db dev dev-auto dev-graphical dev-text test js-check validate commit-ready visual-install visual-check generate-icons require-network-install require-browser-check require-server-run
 
 require-network-install:
 	@if [ "$(ALLOW_NETWORK_INSTALL)" != "1" ]; then \
@@ -53,8 +53,14 @@ dev-text: require-server-run
 test:
 	$(VENV)/bin/python -m unittest discover -s tests -v
 
+js-check:
+	$(PYTHON) scripts/check_js_syntax.py
+
 validate:
 	./scripts/run_local_validation.sh
+
+commit-ready:
+	$(PYTHON) scripts/prepare_git_commit.py --fix
 
 visual-install: require-network-install
 	@if [ ! -x "$(VENV)/bin/python" ]; then "$(PYTHON)" -m venv "$(VENV)"; fi; \

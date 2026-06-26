@@ -32,7 +32,10 @@ For hosted CodingWorkspace visual requests, do this first:
 5. Render the composed subject with `drawImage`.
 6. Add a few direct controls in `index.html`, wire them in `main.js`, and expose
    one renderer update method.
-7. Run `make validate`.
+7. Keep `createSpriteTexture` in `scene.js` unless you deliberately update
+   `tests/test_graphics_defaults.py`; that helper name is a test-backed signal
+   that the renderer is still sprite/bitmap-first.
+8. Run `make validate`.
 
 Use SVG/vector graphics only when the requested style is deliberately stylized
 or when a simple deformable rig is more important than photoreal appearance.
@@ -44,6 +47,18 @@ Only open `scripts/visual_verify.py`, `server/requirements-visual.txt`, or the
 Playwright report internals if screenshot verification is already available and
 you need to debug that pipeline. Do not install browser tooling unless the user
 explicitly asks.
+
+## Validation And Commit Rails
+
+- Do not try to install or call Node just to check JavaScript. Use `make validate`
+  for the repo-standard check or `make js-check` for the Python-based JavaScript
+  structural check.
+- If Git reports missing author identity or a stale `.git/index.lock`, run
+  `make commit-ready`. It sets repo-local `Codex <codex@local>` identity and
+  removes only stale index locks.
+- In the GizmoApp source repository, commit completed changes at the end of each
+  turn. In template-derived apps, do not push unless the user asks for that Git
+  or deploy action.
 
 ## When To Read More
 

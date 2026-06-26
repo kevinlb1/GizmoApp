@@ -85,7 +85,17 @@ Run the repo-standard validation entry point with:
 make validate
 ```
 
-The helper uses `.venv`, system packages, or `.pydeps/` when they already exist. It does not install packages automatically, so it stays safe for escalation-free agent runs.
+The helper first runs a Python-based JavaScript structural check, then uses `.venv`, system packages, or `.pydeps/` when they already exist. It does not install packages automatically, so it stays safe for escalation-free agent runs. Node is intentionally not required; for a JS-only sanity pass, run:
+
+```bash
+make js-check
+```
+
+Before a local source-repo commit, this helper can set a repo-local Git identity and safely clear stale index locks:
+
+```bash
+make commit-ready
+```
 
 Machine-learning features should install the optional scikit-learn dependency only when an app actually needs ML:
 
@@ -145,6 +155,7 @@ For template-derived apps, the intended workflow is:
 
 - complete a task
 - commit it with a descriptive message
+- if Git identity or a stale index lock blocks the commit, run `make commit-ready` instead of changing global Git config or removing lock files by hand
 - push it so the deployment cron job can pick it up only when the user explicitly asks for the push or deploy flow
 - if the task installs or generates local-only files that do not belong in the repo, add them to `.gitignore`
 

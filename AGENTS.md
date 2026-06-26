@@ -8,6 +8,8 @@
 5. If Git author identity is missing, prefer configuring a repo-local identity instead of changing global Git settings without explicit user direction.
 6. If a task installs or generates local-only files that should not live in the repository, add them to `.gitignore` as part of the same task.
 7. When a task changes graphics, canvas rendering, visual styling, maps, images, animation, or other user-visible visuals, run visual verification before ending the turn only if the needed browser/server tooling is already available without escalation or the user explicitly approves it. Inspect `var/visual-report/index.html` and improve the result if it looks bad or the canvas checks fail. If visual verification is blocked by missing browser tooling, sandbox restrictions, or another real blocker, say so explicitly in the final response instead of calling the graphics verified.
+8. Do not look for Node just to validate JavaScript in this repo. The scaffold intentionally has no Node dependency; use `make validate` for the full local check or `make js-check` for the Python-based JavaScript structural check.
+9. If a GizmoApp source-repo commit fails because Git identity is missing or `.git/index.lock` appears stale, run `make commit-ready`. It configures repo-local `Codex <codex@local>` identity and removes only stale index locks.
 
 ## Hosted Mini Graphics Path
 
@@ -20,11 +22,12 @@ When this repo is cloned inside CodingWorkspace and the student asks for a visua
    - `server/gizmoapp_server/static/app/styles.css`
 2. Build the requested subject as one or a few image sprites. For realistic animals, people, products, or other art-quality subjects, prefer a generated or supplied PNG/WebP asset checked into `server/gizmoapp_server/static/app/assets/`, then render it with `drawImage`. Use an offscreen `<canvas>` procedural texture only as a fallback when no image-generation tool or asset is available.
 3. Do not build a realistic finished subject from many visible canvas ellipses, polygons, or lines. It is acceptable to use gradients, noise, shadows, ellipses, and lines inside a hidden offscreen texture generator, but if the final visible result still looks like stacked primitives, switch strategies or report the image-asset blocker.
-4. Use SVG/vector graphics for deliberately stylized icons, diagrams, simple characters, or deformable rigs. Do not try to create photorealistic vector art by piling up many SVG/canvas primitives. For clean resize plus simple deformation, prefer a hybrid: a high-quality bitmap sprite for appearance plus a small vector control/mask layer for adjustable pose or proportions.
-5. Add simple HTML controls such as sliders, color inputs, or buttons in `index.html`, wire them in `main.js`, and expose a small renderer method such as `scene.setParameters(...)`.
-6. Keep the turn bounded. Do not spend the whole turn reading deployment docs, nginx/cron scripts, optional capability modules, or visual verification internals unless the student request specifically needs them.
-7. Validate with `make validate` when available. Run `ALLOW_BROWSER_CHECK=1 make visual-check` only if browser tooling is already available and permitted. Do not run `make visual-install` automatically; if screenshots are blocked, report that blocker clearly.
-8. Before finishing, check `git status --short`. A visual-app turn should leave a real code change or a clear blocker, not only notes about what you inspected. Hosted CodingWorkspace agents should commit locally when the platform asks for that, but must not push.
+4. Keep the `createSpriteTexture` helper name in `scene.js` unless you intentionally update the graphics-defaults test and docs. That name is a lightweight contract that the renderer is still sprite/bitmap-first.
+5. Use SVG/vector graphics for deliberately stylized icons, diagrams, simple characters, or deformable rigs. Do not try to create photorealistic vector art by piling up many SVG/canvas primitives. For clean resize plus simple deformation, prefer a hybrid: a high-quality bitmap sprite for appearance plus a small vector control/mask layer for adjustable pose or proportions.
+6. Add simple HTML controls such as sliders, color inputs, or buttons in `index.html`, wire them in `main.js`, and expose a small renderer method such as `scene.setParameters(...)`.
+7. Keep the turn bounded. Do not spend the whole turn reading deployment docs, nginx/cron scripts, optional capability modules, or visual verification internals unless the student request specifically needs them.
+8. Validate with `make validate` when available. Run `ALLOW_BROWSER_CHECK=1 make visual-check` only if browser tooling is already available and permitted. Do not run `make visual-install` automatically; if screenshots are blocked, report that blocker clearly.
+9. Before finishing, check `git status --short`. A visual-app turn should leave a real code change or a clear blocker, not only notes about what you inspected. Hosted CodingWorkspace agents should commit locally when the platform asks for that, but must not push.
 
 ## Agent Orientation
 
@@ -90,6 +93,8 @@ Use `docs/agent-map.md` as the routing document for future coding agents. It exp
 - `server/gizmoapp_server/static/app/capabilities/`: optional frontend helpers for browser audio, OpenStreetMap tile helpers, ML calls, and optimization calls
 - `docs/agent-extension-guide.md`: concrete extension guidance for future agentic coding tasks
 - `scripts/visual_verify.py`: optional Playwright-based screenshot and canvas sanity-check pipeline for graphics work
+- `scripts/check_js_syntax.py`: Python-based JavaScript structural checker used by `make validate`; Node is not required
+- `scripts/prepare_git_commit.py`: repo-local Git identity and stale-lock preflight used by `make commit-ready`
 - `server/requirements-visual.txt`: optional visual-verification dependencies
 - `scripts/require_explicit_approval.sh`: shared guard for commands that may need network, browser/server automation, host writes, remote Git, sudo, or deployment access
 - `scripts/install_machine_dependencies.sh`: one-time host bootstrap for system packages
@@ -120,6 +125,7 @@ Use `docs/agent-map.md` as the routing document for future coding agents. It exp
 - Preserve deployability while editing: if runtime behavior, dependencies, routes, or operational steps change, update `README.md` and this file.
 - Keep local install artifacts and machine-specific files out of Git; update `.gitignore` when new ones appear.
 - Before saying validation is blocked by missing local Python packages, run `make validate`. That helper should reuse `.venv`, system packages, or repo-local `.pydeps/` when already present, but it must not install packages automatically.
+- Before saying JavaScript validation is blocked by missing Node, run `make js-check` or `make validate`; JavaScript checks are intentionally Python-based.
 - For graphics or visual UI changes, run `ALLOW_BROWSER_CHECK=1 make visual-check` only when browser/server automation is already permitted and Playwright/Chromium are already available. Do not run `make visual-install` automatically; if visual tooling is missing, report the blocker and the manual setup command.
 - After completing work in the GizmoApp source repository, run the relevant validation you can run locally and create a local Git commit. For template-derived apps, commit or push only when the user explicitly asks for that Git action in the current turn.
 

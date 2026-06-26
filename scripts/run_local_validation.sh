@@ -8,6 +8,8 @@ PYTHON_BIN="${PYTHON:-python3}"
 VENV_PYTHON="$ROOT_DIR/.venv/bin/python"
 PYDEPS_DIR="$ROOT_DIR/.pydeps"
 
+"$PYTHON_BIN" scripts/check_js_syntax.py
+
 run_unittests() {
   "$@" -m unittest discover -s tests -v
 }
