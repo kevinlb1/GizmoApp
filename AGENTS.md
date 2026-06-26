@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Workflow Rules
-1. Standing user instruction for the GizmoApp source repository: commit completed repository changes at the end of every Codex turn with a descriptive commit message. This applies to development of GizmoApp itself, not to repositories cloned from this template.
+1. Standing user instruction for the GizmoApp source repository: commit completed repository changes at the end of every Codex turn with a descriptive commit message, then push the branch to its configured remote. Treat this as explicit standing approval for source-repo Git push operations. This applies only to development of GizmoApp itself, not to repositories cloned from this template; do not copy this always-push rule into derived apps.
 2. Standing user instruction for template-derived repositories: do not automatically run commands that would need sandbox escalation. This includes remote Git operations, package installs, browser/server automation, sudo, deployment scripts, SSH, and writes outside the workspace unless the user explicitly asks for that action in the current turn.
 3. Update this `AGENTS.md` whenever a task changes important operational, deployment, workflow, or safety context.
 4. Prefer changes that make future Codex edits easy: keep structure explicit, keep files reasonably small, and avoid unnecessary complexity.
@@ -9,7 +9,7 @@
 6. If a task installs or generates local-only files that should not live in the repository, add them to `.gitignore` as part of the same task.
 7. When a task changes graphics, canvas rendering, visual styling, maps, images, animation, or other user-visible visuals, run visual verification before ending the turn only if the needed browser/server tooling is already available without escalation or the user explicitly approves it. Inspect `var/visual-report/index.html` and improve the result if it looks bad or the canvas checks fail. If visual verification is blocked by missing browser tooling, sandbox restrictions, or another real blocker, say so explicitly in the final response instead of calling the graphics verified.
 8. Do not look for Node just to validate JavaScript in this repo. The scaffold intentionally has no Node dependency; use `make validate` for the full local check or `make js-check` for the Python-based JavaScript structural check.
-9. If a GizmoApp source-repo commit fails because Git identity is missing or `.git/index.lock` appears stale, run `make commit-ready`. It configures repo-local `Codex <codex@local>` identity and removes only stale index locks.
+9. If a GizmoApp source-repo commit or push is blocked by Git identity or stale `.git/index.lock` trouble, run `make commit-ready`. It configures repo-local `Codex <codex@local>` identity and removes only stale index locks.
 
 ## Hosted Mini Graphics Path
 
@@ -129,7 +129,7 @@ Use `docs/agent-map.md` as the routing document for future coding agents. It exp
 - Before saying validation is blocked by missing local Python packages, run `make validate`. That helper should reuse `.venv`, system packages, or repo-local `.pydeps/` when already present, but it must not install packages automatically.
 - Before saying JavaScript validation is blocked by missing Node, run `make js-check` or `make validate`; JavaScript checks are intentionally Python-based.
 - For graphics or visual UI changes, run `ALLOW_BROWSER_CHECK=1 make visual-check` only when browser/server automation is already permitted and Playwright/Chromium are already available. Do not run `make visual-install` automatically; if visual tooling is missing, report the blocker and the manual setup command.
-- After completing work in the GizmoApp source repository, run the relevant validation you can run locally and create a local Git commit. For template-derived apps, commit or push only when the user explicitly asks for that Git action in the current turn.
+- After completing work in the GizmoApp source repository, run the relevant validation you can run locally, create a local Git commit, and push the branch to its configured remote. For template-derived apps, commit or push only when the user explicitly asks for that Git action in the current turn.
 
 ## Non-Expert User Support
 - Use plain language when describing choices, especially around shell selection, deployment, gunicorn, nginx, cron, and SQLite.
@@ -228,9 +228,9 @@ Use `docs/agent-map.md` as the routing document for future coding agents. It exp
 - When adding starter-friendly functionality, keep rebranding effort low: avoid scattering project-name-specific strings through shared logic unless necessary.
 
 ## Safety Guidance
-- The user has explicitly requested that template-derived repository defaults avoid escalation requests. Local commits are expected for GizmoApp source-repository development. Do not push, fetch, install packages, start browser/server automation, run sudo, SSH, or deploy unless the user explicitly asks for that action in the current turn.
+- The user has explicitly requested that template-derived repository defaults avoid escalation requests. Local commits and remote pushes are expected for GizmoApp source-repository development. For template-derived repositories, do not push, fetch, install packages, start browser/server automation, run sudo, SSH, or deploy unless the user explicitly asks for that action in the current turn.
 - Keep deployment scripts manual and opt-in. Avoid making irreversible server or deployment changes without clear user direction.
 - Treat HTTPS as a practical requirement for reliable PWA installation, especially on iPhone and Chromium-based browsers.
 
 ## Local Git Identity
-- This repository may use the repo-local Git identity `Codex <codex@local>` for local-only commits when no user-specific identity has been configured.
+- This repository may use the repo-local Git identity `Codex <codex@local>` for source-repo commits when no user-specific identity has been configured.
