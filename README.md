@@ -6,7 +6,7 @@ GizmoApp is a blank webapp template repository intended to be easy for later Cod
 - A lightweight SQLite data store with migrations and app state tables
 - A touch-friendly graphical shell with sprite/bitmap-first rendering and layered texture support
 - A minimal text-first shell with the same responsive app frame
-- Minimal public starter chrome: Admin/Install live in a small removable `.template-chrome` dock instead of a bulky header
+- No public starter chrome: Admin remains available by direct route, but blank public shells show no Admin/Install/status controls
 - Lazy capability APIs for audio analysis, search, optimization, mapping, and optional machine learning
 - Deployment examples for `nginx` in front of `gunicorn`
 - A cron-friendly deploy script that fast-forwards from `main` and reloads `gunicorn` only when runtime changes require it

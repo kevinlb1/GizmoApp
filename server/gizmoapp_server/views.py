@@ -17,8 +17,6 @@ def _root_path() -> str:
 def _client_config() -> dict:
     prefix = current_app.config["URL_PREFIX"]
     return {
-        "appName": current_app.config["APP_NAME"],
-        "apiBase": scoped_path(prefix, "api"),
         "serviceWorkerUrl": scoped_path(prefix, "sw.js"),
     }
 
@@ -115,13 +113,10 @@ def register_page_routes(app: Flask) -> None:
             current_app.config["APP_SHELL_TEMPLATE"],
             app_name=current_app.config["APP_NAME"],
             app_tagline=current_app.config["APP_TAGLINE"],
-            shell_label=current_app.config["APP_SHELL_LABEL"],
-            shell_variant=current_app.config["APP_SHELL"],
             shell_description=current_app.config["APP_SHELL_DESCRIPTION"],
             base_href=root_path,
             shared_asset_base=scoped_path(prefix, "app/"),
             asset_base=scoped_path(prefix, current_app.config["APP_SHELL_ASSET_SUBPATH"]),
-            admin_url=scoped_path(prefix, "admin/"),
             manifest_url=scoped_path(prefix, "manifest.webmanifest"),
             icon_url=scoped_path(prefix, "icons/icon-192.png"),
             apple_touch_icon_url=scoped_path(prefix, "icons/apple-touch-icon.png"),

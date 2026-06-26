@@ -17,11 +17,6 @@
     <link rel="stylesheet" href="{{ asset_base }}styles.css">
   </head>
   <body class="shell-body text-shell-body">
-    <nav class="template-chrome" aria-label="Template controls">
-      <span class="template-status-dot" id="text-health-pill" data-state="booting" aria-label="Status: booting" title="Booting"></span>
-      <button class="template-command" id="install-button" hidden>Install</button>
-      <a class="template-command" href="{{ admin_url }}">Admin</a>
-    </nav>
     <div class="app-frame public-frame text-frame">
       <main class="text-workspace" aria-label="Text workspace">
         <section class="workspace-panel primary-panel" aria-label="Primary workspace">
@@ -30,8 +25,6 @@
       </main>
     </div>
 
-    <p id="install-hint" hidden></p>
-    <span id="shell-value" hidden>{{ shell_label }}</span>
     <script id="gizmoapp-config" type="application/json">{{ client_config | tojson }}</script>
     <script type="module" src="{{ asset_base }}main.js"></script>
   </body>

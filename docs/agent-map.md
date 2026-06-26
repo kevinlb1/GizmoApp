@@ -15,18 +15,17 @@ Choose the shell first:
 | Shared data, persistence, or API behavior | Backend/API | `server/gizmoapp_server/api.py`, `server/gizmoapp_server/db.py`, `server/gizmoapp_server/views.py` |
 | Runtime shell choice | Shell selection | `server/gizmoapp_server/shells.py`, `server/wsgi.py`, `deploy/app.env` |
 
-The public shells intentionally do not have a large scaffold header. The small
-`.template-chrome` dock is only for starter Admin/Install controls; delete,
-hide, or replace it when a specific app has its own navigation or no need for
-template controls.
+The public shells intentionally have no scaffold chrome: no header, Admin
+button, Install button, status pill, or starter dock. Admin remains available at
+the direct `/admin/` route for development and diagnostics.
 
 ## Graphics Fast Path
 
 For hosted CodingWorkspace visual requests, do this first:
 
 1. Edit the graphical shell files listed above.
-2. Remove or replace `.template-chrome` if the app should be immersive or if the
-   starter Admin/Install controls are not useful in the finished screen.
+2. Add only the app-specific controls the user requested; do not start from
+   scaffold Admin/Install/status controls.
 3. If the request asks for a realistic animal, person, product, or other
    art-quality subject, use a supplied or generated PNG/WebP sprite when an
    image-generation tool or asset is available. Put durable assets under

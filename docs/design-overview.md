@@ -26,9 +26,9 @@ shape of the project is meant to support:
   and optimization support does not add unnecessary runtime or install overhead.
 - Keep visual verification optional but available, so agents can inspect graphics
   screenshots without forcing browser automation into the base runtime.
-- Keep public starter chrome minimal. Admin and diagnostics can use the full
-  header; public shells should start with a small removable template-control
-  dock rather than a bulky scaffold header.
+- Keep public starter chrome absent. Admin and diagnostics can use the full
+  header, but public shells should start with no scaffold Admin/Install/status
+  controls.
 
 ## High-Level Architecture
 
