@@ -17,20 +17,12 @@
     <link rel="stylesheet" href="{{ asset_base }}styles.css">
   </head>
   <body class="shell-body graphical-body">
-    <div class="app-frame graphical-frame">
-      <header class="app-topbar">
-        <a class="brand-mark" href="{{ base_href }}" aria-label="{{ app_name }} home">G</a>
-        <div class="brand-copy">
-          <p class="shell-kicker">{{ shell_label }}</p>
-          <h1>{{ app_name }}</h1>
-        </div>
-        <nav class="app-actions" aria-label="App controls">
-          <span class="connection-indicator" id="health-pill" data-state="booting">Booting</span>
-          <button class="command-button" id="install-button" hidden>Install</button>
-          <a class="command-button" href="{{ admin_url }}">Admin</a>
-        </nav>
-      </header>
-
+    <nav class="template-chrome" aria-label="Template controls">
+      <span class="template-status-dot" id="health-pill" data-state="booting" aria-label="Status: booting" title="Booting"></span>
+      <button class="template-command" id="install-button" hidden>Install</button>
+      <a class="template-command" href="{{ admin_url }}">Admin</a>
+    </nav>
+    <div class="app-frame public-frame graphical-frame">
       <main class="graphics-workspace" aria-label="Graphical workspace">
         <canvas id="scene-canvas" aria-label="Blank graphical workspace"></canvas>
       </main>

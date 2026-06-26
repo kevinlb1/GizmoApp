@@ -43,6 +43,7 @@ Use `docs/agent-map.md` as the routing document for future coding agents. It exp
 - The project should keep at least two blank shells in the same codebase: a graphical shell and a more standard text-first shell.
 - Default shells should stay light enough for future visual work to be readable. Do not seed the starter with a busy demo scene, fish tank, flock, dashboard, sample table, or workflow mockup unless the user explicitly asks for that app content.
 - The initial app render must stay genuinely blank: no seeded dots, no map/geography language, and no visible database/path/runtime diagnostics outside admin-oriented surfaces.
+- Public shells must not render a bulky scaffold header. Keep template-only controls in the small `.template-chrome` dock, and remove or replace that dock when creating a specific app experience. Reserve the full `.app-topbar` header for admin or explicit app UI that needs it.
 - The graphical shell must be sprite/bitmap-first by default, not primitive-shape-first. Preserve support for layered sprites, generated or loaded bitmap textures, and future renderer swaps; use direct canvas polygons/ellipses mainly for hit areas, debug overlays, masks, or intentionally simple vector marks.
 - High-quality realistic visuals should come from generated or supplied image assets where possible. Procedural canvas drawing is acceptable for textures, placeholders, and intentionally stylized work, but not as the default way to fake photoreal animals or people.
 - A core purpose of this repository is to let a future Codex session start from near-zero context and still build, explain, and deploy a useful web app for a non-expert user.
@@ -121,6 +122,7 @@ Use `docs/agent-map.md` as the routing document for future coding agents. It exp
 - Prefer `GIZMOAPP_SHELL=auto` for agentic/student workspaces so the preview follows the shell-specific files that were changed.
 - For template-derived apps, prefer changing git-tracked runtime settings in `deploy/app.env`; push or deploy only when the user explicitly asks for that in the current turn.
 - If the user asks for a feature, decide first whether it belongs in the graphical shell, the text shell, or shared backend/API code.
+- For derived app creation, replace the public workspace first and delete or restyle `.template-chrome` if the app does not need the starter Admin/Install controls. Do not reintroduce the scaffold `app-topbar` as default public chrome.
 - For sound, search, optimization, mapping, machine-learning, or rich-graphics work, check `docs/agent-extension-guide.md` and the capability modules before adding new infrastructure.
 - Preserve deployability while editing: if runtime behavior, dependencies, routes, or operational steps change, update `README.md` and this file.
 - Keep local install artifacts and machine-specific files out of Git; update `.gitignore` when new ones appear.

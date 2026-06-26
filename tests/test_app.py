@@ -179,6 +179,9 @@ class GizmoAppTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn("Blank graphical workspace", html)
+        self.assertIn("template-chrome", html)
+        self.assertNotIn("app-topbar", html)
+        self.assertNotIn("brand-mark", html)
         self.assertIn("base.css", html)
         self.assertNotIn("UBC Vancouver", html)
         self.assertNotIn("Map", html)
@@ -193,10 +196,25 @@ class GizmoAppTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn("Text workspace", html)
+        self.assertIn("template-chrome", html)
+        self.assertNotIn("app-topbar", html)
+        self.assertNotIn("brand-mark", html)
         self.assertIn("base.css", html)
         self.assertNotIn("UBC Vancouver", html)
         self.assertNotIn("Database", html)
         self.assertNotIn("Location", html)
+
+    def test_admin_keeps_header_and_diagnostics(self):
+        app = self.make_app("")
+        client = app.test_client()
+
+        response = client.get("/admin/")
+        html = response.get_data(as_text=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("app-topbar", html)
+        self.assertIn("brand-mark", html)
+        self.assertIn("Database", html)
 
 
 if __name__ == "__main__":

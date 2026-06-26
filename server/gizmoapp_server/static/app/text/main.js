@@ -21,8 +21,10 @@ function updateHealthPill(healthy) {
   if (!pill) {
     return;
   }
+  const label = healthy ? "Status: ready" : "Status: offline";
   pill.dataset.state = healthy ? "healthy" : "degraded";
-  pill.textContent = healthy ? "Ready" : "Offline";
+  pill.setAttribute("aria-label", label);
+  pill.title = healthy ? "Ready" : "Offline";
 }
 
 

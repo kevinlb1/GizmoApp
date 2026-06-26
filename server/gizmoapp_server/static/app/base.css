@@ -63,6 +63,11 @@ a {
   gap: 0.85rem;
 }
 
+.public-frame {
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
+}
+
 .app-topbar {
   min-height: 4rem;
   display: grid;
@@ -127,6 +132,53 @@ a {
   font-weight: 650;
   text-decoration: none;
   white-space: nowrap;
+}
+
+.template-chrome {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 0.65rem);
+  right: calc(env(safe-area-inset-right, 0px) + 0.65rem);
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.template-status-dot {
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.76);
+}
+
+.template-status-dot[data-state="booting"] {
+  background: var(--muted);
+}
+
+.template-status-dot[data-state="degraded"] {
+  background: var(--danger);
+}
+
+.template-command {
+  min-height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--ink);
+  padding: 0 0.62rem;
+  font-size: 0.82rem;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: var(--shadow-soft);
+}
+
+.template-command:is(button) {
+  cursor: pointer;
 }
 
 .command-button {
@@ -199,5 +251,16 @@ a {
   .connection-indicator,
   .command-button {
     min-height: 2.35rem;
+  }
+
+  .template-chrome {
+    top: calc(env(safe-area-inset-top, 0px) + 0.45rem);
+    right: calc(env(safe-area-inset-right, 0px) + 0.45rem);
+  }
+
+  .template-command {
+    min-height: 1.85rem;
+    padding: 0 0.52rem;
+    font-size: 0.78rem;
   }
 }

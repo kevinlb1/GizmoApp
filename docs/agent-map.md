@@ -15,27 +15,34 @@ Choose the shell first:
 | Shared data, persistence, or API behavior | Backend/API | `server/gizmoapp_server/api.py`, `server/gizmoapp_server/db.py`, `server/gizmoapp_server/views.py` |
 | Runtime shell choice | Shell selection | `server/gizmoapp_server/shells.py`, `server/wsgi.py`, `deploy/app.env` |
 
+The public shells intentionally do not have a large scaffold header. The small
+`.template-chrome` dock is only for starter Admin/Install controls; delete,
+hide, or replace it when a specific app has its own navigation or no need for
+template controls.
+
 ## Graphics Fast Path
 
 For hosted CodingWorkspace visual requests, do this first:
 
 1. Edit the graphical shell files listed above.
-2. If the request asks for a realistic animal, person, product, or other
+2. Remove or replace `.template-chrome` if the app should be immersive or if the
+   starter Admin/Install controls are not useful in the finished screen.
+3. If the request asks for a realistic animal, person, product, or other
    art-quality subject, use a supplied or generated PNG/WebP sprite when an
    image-generation tool or asset is available. Put durable assets under
    `server/gizmoapp_server/static/app/assets/`.
-3. If no image asset source is available, make that blocker explicit and create
+4. If no image asset source is available, make that blocker explicit and create
    an asset slot or simple stylized placeholder. Do not fake realism with dozens
    of visible ellipses, polygons, and lines.
-4. Put the main subject in `scene.js` as one or a few loaded image sprites or
+5. Put the main subject in `scene.js` as one or a few loaded image sprites or
    offscreen bitmap textures.
-5. Render the composed subject with `drawImage`.
-6. Add a few direct controls in `index.html`, wire them in `main.js`, and expose
+6. Render the composed subject with `drawImage`.
+7. Add a few direct controls in `index.html`, wire them in `main.js`, and expose
    one renderer update method.
-7. Keep `createSpriteTexture` in `scene.js` unless you deliberately update
+8. Keep `createSpriteTexture` in `scene.js` unless you deliberately update
    `tests/test_graphics_defaults.py`; that helper name is a test-backed signal
    that the renderer is still sprite/bitmap-first.
-8. Run `make validate`.
+9. Run `make validate`.
 
 Use SVG/vector graphics only when the requested style is deliberately stylized
 or when a simple deformable rig is more important than photoreal appearance.
