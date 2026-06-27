@@ -65,6 +65,7 @@ Use `docs/agent-map.md` as the routing document for future coding agents. It exp
 - If a requested feature depends on geographic location and the user has not given a location, assume UBC Vancouver.
 - If the user requests mapping, prefer OpenStreetMap before adding a paid or account-bound mapping provider.
 - If the user requests machine learning, use scikit-learn through the optional `server/requirements-ml.txt` dependency path rather than adding it to the base install.
+- If the user requests external web search or a search provider/API, prefer Bing or Tavily. Do not use DuckDuckGo as the default search provider.
 
 ## Architecture Snapshot
 - Backend: Python `Flask`

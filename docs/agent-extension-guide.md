@@ -126,7 +126,9 @@ or signal processing that needs them.
 
 Start with `GET /api/search?q=...` and SQLite queries. If a feature needs richer
 local search, add SQLite FTS tables in a migration before introducing an external
-search service.
+search service. If the requested feature needs external web search or a hosted
+search API, prefer Bing or Tavily and do not use DuckDuckGo as the default
+provider.
 
 ## Optimization
 
