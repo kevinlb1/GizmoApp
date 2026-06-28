@@ -29,6 +29,17 @@ When this repo is cloned inside CodingWorkspace and the student asks for a visua
 8. Validate with `make validate` when available. Run `ALLOW_BROWSER_CHECK=1 make visual-check` only if browser tooling is already available and permitted. Do not run `make visual-install` automatically; if screenshots are blocked, report that blocker clearly.
 9. Before finishing, check `git status --short`. A visual-app turn should leave a real code change or a clear blocker, not only notes about what you inspected. Hosted CodingWorkspace agents should commit locally when the platform asks for that, but must not push.
 
+## CodingWorkspace Preview Sandbox
+
+CodingWorkspace displays derived GizmoApp projects inside a sandboxed iframe. The embedded preview intentionally allows normal app execution but does not grant same-origin privileges:
+
+- Allowed: JavaScript modules, forms, modals, popups, downloads, pointer lock, fullscreen, autoplay, clipboard read/write, camera, and microphone when the browser/user also permits them.
+- Not allowed in the embedded preview: `allow-same-origin`, service-worker/PWA installation, cookie/localStorage/sessionStorage/IndexedDB assumptions, direct access to the parent CodingWorkspace page, and cross-workspace communication.
+- Code must still work when served under a path prefix such as `/CodingWorkspace/workspaces/<id>/preview/`; use the provided `base` tag, `client_config`, scoped routes, and relative asset paths instead of hard-coded root paths.
+- For persistent app state, use the Flask/SQLite backend APIs rather than browser storage. If browser storage is a nice-to-have, wrap it in `try`/`catch` and keep the app functional when storage is unavailable.
+- For audio input, prefer `static/app/capabilities/audio.js`; it uses `getUserMedia`, which requires a user gesture and browser permission even though CodingWorkspace grants the iframe microphone capability.
+- Do not ask CodingWorkspace to add `allow-same-origin` as a quick fix. While previews are proxied on the same host as the platform, that would weaken the browser isolation between student apps and the CodingWorkspace UI.
+
 ## Agent Orientation
 
 Use `docs/agent-map.md` as the routing document for future coding agents. It explains which files matter for common task types and which deployment, capability, or visual-verification files should be skipped unless the current request needs them.

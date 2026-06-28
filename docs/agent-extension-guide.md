@@ -122,6 +122,14 @@ sample arrays to `POST /api/audio/analyze` for dependency-free analysis. Add
 heavier audio libraries only when the user asks for transcription, classification,
 or signal processing that needs them.
 
+When the app is embedded in CodingWorkspace, the preview iframe grants
+microphone permission policy, but the browser still requires a user gesture and
+the user's permission. Keep audio setup behind an explicit button or similar
+interaction. Do not depend on service workers, localStorage, sessionStorage,
+IndexedDB, cookies, or same-origin access in the embedded preview; use backend
+Flask/SQLite APIs for persistent state and wrap optional browser storage in
+`try`/`catch`.
+
 ## Search
 
 Start with `GET /api/search?q=...` and SQLite queries. If a feature needs richer
