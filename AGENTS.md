@@ -150,6 +150,9 @@ Use `docs/agent-map.md` as the routing document for future coding agents. It exp
 - Avoid requiring the user to understand internal framework details unless those details affect a decision they must make.
 
 ## Deployment Context
+
+- Do not run complex SSH commands inline. For remote commands containing heredocs, URLs, SQL, JSON, Python snippets, `$`, `&`, quotes, parentheses, or shell control operators, use `python3 tools/remote_exec.py` or a checked-in script. Inline SSH is only for simple single commands.
+- For bounded user-level server work, prefer `python3 tools/remote_exec.py --command 'bounded bash body'` or `python3 tools/remote_exec.py --script path/to/script.py -- arg1 arg2`. The helper defaults to `vickrey10.cs.ubc.ca:/home/kevinlb/bin/GizmoApp`; pass `--remote-dir` for a derived app instance.
 - Development work happens in the current repository root. Do not assume the local checkout directory name is authoritative if the repo was renamed after cloning.
 - The intended live checkout on the server is: `/home/kevinlb/bin/GizmoApp`.
 - The canonical git remote after the GitHub rename is expected to be: `git@github.com:kevinlb1/GizmoApp.git`.
