@@ -73,17 +73,25 @@ Shell selection is a deployment/runtime choice, not a repo split.
 - `server/wsgi_graphical.py` forces the graphical shell.
 - `server/wsgi_text.py` forces the text shell.
 
-The intended default for template-derived apps is to store the chosen shell in
-`deploy/app.env`. During an explicitly requested deploy flow, commit and push
-that setting so the deploy pipeline can apply it to the live service without
-requiring a manual SSH edit on the server.
+For hosted CodingWorkspace apps, the intended default is to store concrete
+student-facing shell intent in `deploy/app-shell.txt`. It is deliberately not an
+env file because hosted workers may be denied `*.env` edits.
 
-For agentic/student workspaces, the preferred value is `GIZMOAPP_SHELL=auto`.
-Auto mode inspects changed shell-specific files in the checkout. Text-shell
-template/assets select `text`, graphical template/assets select `graphical`,
-and mixed or unclear changes fall back to `graphical`. This keeps the served
-preview aligned with the files the coding agent actually edited while still
-allowing deployments to force `graphical` or `text` when needed.
+For non-hosted deployments, `deploy/app.env` remains the env-style place to
+force `GIZMOAPP_SHELL=text` or `GIZMOAPP_SHELL=graphical`. During an explicitly
+requested deploy flow, commit and push that setting so the deploy pipeline can
+apply it to the live service without requiring a manual SSH edit on the server.
+
+For open-ended agentic/student workspaces, the preferred value is
+`GIZMOAPP_SHELL=auto`. Auto mode inspects changed shell-specific files in the
+checkout. Text-shell template/assets select `text`, graphical template/assets
+select `graphical`, and mixed or unclear changes fall back to `graphical`. When
+the student prompt clearly targets one shell, the agent should write `text` or
+`graphical` to tracked `deploy/app-shell.txt` instead of editing private `.env`
+runtime state or env-style `deploy/app.env` files that hosted workers may be
+denied from editing. This keeps the served preview aligned with the app the
+coding agent built while still allowing non-hosted deployments to force
+`graphical` or `text` through `GIZMOAPP_SHELL` when needed.
 
 ## Routing And Prefix Design
 
@@ -109,6 +117,15 @@ explicitly requested Git pushes and cron-driven deploys. Today that mainly means
 
 - `GIZMOAPP_SHELL`
 
+### Git-tracked hosted shell intent
+
+`deploy/app-shell.txt` is for hosted/student shell intent and may contain one
+of:
+
+- `auto`
+- `text`
+- `graphical`
+
 ### Live machine-specific settings
 
 `.env` is for settings that should stay local to one deployed checkout:
@@ -119,7 +136,9 @@ explicitly requested Git pushes and cron-driven deploys. Today that mainly means
 - `GIZMOAPP_SYSTEMD_USER_SERVICE`
 - `GIZMOAPP_URL_PREFIX`
 
-For local development, the app reads `deploy/app.env` and then `.env`.
+For local development, the app reads `deploy/app.env` and then `.env`. If the
+requested shell is `auto`, it also checks `deploy/app-shell.txt` before falling
+back to changed-file detection.
 
 For deployed services, systemd loads `.env` directly into the process
 environment. The deploy scripts keep selected git-tracked keys synchronized from

@@ -5,11 +5,12 @@ import re
 import shlex
 from pathlib import Path
 
-from .shells import DEFAULT_SHELL, available_shells, shell_settings
+from .shells import AUTO_SHELL, DEFAULT_SHELL, available_shell_choices, available_shells, shell_settings
 
 ASSIGNMENT_RE = re.compile(
     r"^\s*(?:export\s+)?(?P<key>[A-Za-z_][A-Za-z0-9_]*)=(?P<raw>.*)$"
 )
+SHELL_INTENT_PATH = Path("deploy/app-shell.txt")
 
 
 def parse_env_assignment(line: str, line_number: int) -> tuple[str, str] | None:
@@ -65,6 +66,31 @@ def normalize_url_prefix(value: str | None) -> str:
     return trimmed.rstrip("/")
 
 
+def load_shell_intent(repo_root: Path) -> str | None:
+    intent_path = repo_root / SHELL_INTENT_PATH
+    try:
+        lines = intent_path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return None
+
+    valid = set(available_shell_choices())
+    for line in lines:
+        value = line.split("#", 1)[0].strip().lower()
+        if not value:
+            continue
+        return value if value in valid else None
+    return None
+
+
+def select_shell_setting(shell_variant: str | None, repo_root: Path) -> str:
+    requested_shell = shell_variant if shell_variant is not None else os.getenv("GIZMOAPP_SHELL", DEFAULT_SHELL)
+    if requested_shell.strip().lower() == AUTO_SHELL:
+        tracked_shell = load_shell_intent(repo_root)
+        if tracked_shell and tracked_shell != AUTO_SHELL:
+            return tracked_shell
+    return requested_shell
+
+
 def load_settings(shell_variant: str | None = None, repo_root: Path | None = None) -> dict:
     repo_root = repo_root or Path(__file__).resolve().parents[2]
     load_local_env(repo_root / "deploy" / "app.env")
@@ -99,7 +125,7 @@ def load_settings(shell_variant: str | None = None, repo_root: Path | None = Non
             "Mapping support is optional; for requested location-dependent features, assume UBC Vancouver only if the user gives no other location.",
         ],
     }
-    settings.update(shell_settings(shell_variant or os.getenv("GIZMOAPP_SHELL", DEFAULT_SHELL), repo_root=repo_root))
+    settings.update(shell_settings(select_shell_setting(shell_variant, repo_root), repo_root=repo_root))
     return settings
 
 

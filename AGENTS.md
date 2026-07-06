@@ -68,6 +68,7 @@ Use `docs/agent-map.md` as the routing document for future coding agents. It exp
 - Assume the user may not know the existing architecture. Briefly explain the active shell, backend, and deployment path when that context matters.
 - If the user asks for a conventional business/data-entry/dashboard/content app and does not specify a shell, prefer the text shell.
 - If the user asks for canvas, sprites, animation, game-like UI, rich visual interaction, or possible future 3D, prefer the graphical shell and start from bitmap textures/sprites when practical.
+- When a request clearly targets the text shell or graphical shell, set the tracked `deploy/app-shell.txt` value to `text` or `graphical` in the same commit as the shell-specific UI changes. Do not edit `.env`; hosted CodingWorkspace treats `.env` as private runtime state and may deny agents access to it. Do not use `deploy/app.env` for hosted shell intent because worker permissions may deny `*.env` edits.
 - Keep both shells viable unless the user explicitly asks to remove one.
 - Favor simple deployable implementations over introducing heavy tooling. The current frontend strategy is intentionally build-free.
 - When adding features, preserve the ability to run behind an nginx path prefix such as `/demo-app` or `/<repo-name>`.
@@ -87,6 +88,8 @@ Use `docs/agent-map.md` as the routing document for future coding agents. It exp
 - App selection:
   - `server/wsgi.py` serves the shell chosen by `GIZMOAPP_SHELL`
   - `GIZMOAPP_SHELL=auto` chooses from changed shell-specific files and falls back to `graphical`
+  - A concrete `text` or `graphical` value in tracked `deploy/app-shell.txt` is the durable shell intent for hosted CodingWorkspace workspaces.
+  - A concrete `GIZMOAPP_SHELL=text` or `GIZMOAPP_SHELL=graphical` in tracked `deploy/app.env` remains the deployment env-style setting for non-hosted deploy flows.
   - `server/wsgi_graphical.py` forces the graphical shell
   - `server/wsgi_text.py` forces the text shell
 - Deployment shape: `nginx` in front of `gunicorn`, with a live checkout typically at `/home/kevinlb/bin/GizmoApp`
@@ -95,6 +98,7 @@ Use `docs/agent-map.md` as the routing document for future coding agents. It exp
 - `README.md`: human-readable setup and deployment instructions
 - `docs/design-overview.md`: architecture and design rationale for the scaffold
 - `.env.example`: runtime settings template, including `GIZMOAPP_SHELL` and `GIZMOAPP_URL_PREFIX`
+- `deploy/app-shell.txt`: git-tracked non-env shell intent for hosted/student workspaces; set to `auto`, `text`, or `graphical`
 - `deploy/app.env`: git-tracked deployment settings that cron should apply from pushed commits, such as `GIZMOAPP_SHELL`
 - `server/manage.py`: local management commands such as `init-db`, `describe`, and `run-dev`
 - `server/gizmoapp_server/shells.py`: shell definitions and shell-specific metadata
@@ -130,8 +134,8 @@ Use `docs/agent-map.md` as the routing document for future coding agents. It exp
 
 ## First Steps For A Fresh Session
 - Read `AGENTS.md` and `docs/agent-map.md` before making architectural assumptions. Then read only the narrower docs or source files that match the current task. Do not read `README.md`, `docs/design-overview.md`, deployment scripts, or optional capability modules in detail unless the task needs them.
-- Check which shell is active or intended by inspecting `.env`, `GIZMOAPP_SHELL`, or the gunicorn target.
-- Prefer `GIZMOAPP_SHELL=auto` for agentic/student workspaces so the preview follows the shell-specific files that were changed.
+- Check which shell is active or intended from the student's prompt, tracked `deploy/app-shell.txt`, `GIZMOAPP_SHELL`, or the gunicorn target. Treat `.env` as private runtime state, not the normal place to express app shell intent.
+- Prefer `GIZMOAPP_SHELL=auto` for open-ended agentic/student workspaces so the preview follows shell-specific files that were changed. When the task clearly chooses text or graphical, pin that concrete shell in tracked `deploy/app-shell.txt`.
 - For template-derived apps, prefer changing git-tracked runtime settings in `deploy/app.env`; push or deploy only when the user explicitly asks for that in the current turn.
 - If the user asks for a feature, decide first whether it belongs in the graphical shell, the text shell, or shared backend/API code.
 - For derived app creation, replace the public workspace first and add only the app-specific navigation or controls the user actually requested. Do not reintroduce scaffold Admin/Install controls or the scaffold `app-topbar` as default public chrome.
@@ -196,7 +200,7 @@ Use `docs/agent-map.md` as the routing document for future coding agents. It exp
 - Preserve the current simple mental model:
   - install host packages once with `scripts/install_machine_dependencies.sh`
   - install a specific checkout with `scripts/install_checkout.sh` or `scripts/install_deployment_instance.sh`
-  - choose the git-tracked default shell with `deploy/app.env`; use `auto` unless there is a clear reason to force `graphical` or `text`
+  - choose hosted/student shell intent with `deploy/app-shell.txt`; keep `deploy/app.env` for non-hosted deployment env settings
   - serve with gunicorn
   - let cron run `scripts/deploy_from_git.sh`
 - Static asset changes generally do not require a gunicorn reload; Python code and templates generally do.
@@ -213,7 +217,7 @@ Use `docs/agent-map.md` as the routing document for future coding agents. It exp
 - Copy `.env.example` to `.env` on the server and set at least:
   - `GIZMOAPP_URL_PREFIX` if the app is mounted under a prefix such as `/<repo-name>`
   - a real `GIZMOAPP_SECRET_KEY`
-- Put git-controlled runtime choices such as `GIZMOAPP_SHELL` in `deploy/app.env`; commit and push them only during an explicitly requested Git/deploy flow so cron can apply them on the server.
+- Put git-controlled non-hosted deployment runtime choices such as `GIZMOAPP_SHELL` in `deploy/app.env`; commit and push them only during an explicitly requested Git/deploy flow so cron can apply them on the server. For hosted/student shell intent, use `deploy/app-shell.txt`.
 - Run `./scripts/install_server.sh` manually after the initial clone or after major environment changes.
 - Configure gunicorn from `deploy/gizmoapp-gunicorn.service.example`.
 - Configure nginx from `deploy/nginx-location.example.conf`.

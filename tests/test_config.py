@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from server.gizmoapp_server.config import load_settings
+from server.gizmoapp_server.config import load_settings, load_shell_intent
 
 
 class ConfigTestCase(unittest.TestCase):
@@ -25,6 +25,40 @@ class ConfigTestCase(unittest.TestCase):
                 settings = load_settings(repo_root=repo_root)
 
             self.assertEqual(settings["APP_SHELL"], "text")
+
+    def test_load_settings_reads_shell_intent_when_requested_shell_is_auto(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo_root = Path(temp_dir)
+            deploy_dir = repo_root / "deploy"
+            deploy_dir.mkdir()
+            (deploy_dir / "app.env").write_text(
+                "GIZMOAPP_SHELL=auto\n",
+                encoding="utf-8",
+            )
+            (deploy_dir / "app-shell.txt").write_text(
+                "# Public shell intent\ntext\n",
+                encoding="utf-8",
+            )
+
+            with patch.dict(os.environ, {}, clear=False):
+                os.environ.pop("GIZMOAPP_SHELL", None)
+                settings = load_settings(repo_root=repo_root)
+
+            self.assertEqual(load_shell_intent(repo_root), "text")
+            self.assertEqual(settings["APP_SHELL"], "text")
+            self.assertEqual(load_settings(shell_variant="auto", repo_root=repo_root)["APP_SHELL"], "text")
+
+    def test_explicit_shell_env_overrides_shell_intent(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo_root = Path(temp_dir)
+            deploy_dir = repo_root / "deploy"
+            deploy_dir.mkdir()
+            (deploy_dir / "app-shell.txt").write_text("text\n", encoding="utf-8")
+
+            with patch.dict(os.environ, {"GIZMOAPP_SHELL": "graphical"}, clear=False):
+                settings = load_settings(repo_root=repo_root)
+
+            self.assertEqual(settings["APP_SHELL"], "graphical")
 
     def test_load_settings_reads_repo_root_dotenv(self):
         with tempfile.TemporaryDirectory() as temp_dir:

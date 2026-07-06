@@ -25,6 +25,7 @@ The scaffold intentionally avoids Node and a frontend bundler. That keeps deploy
 - `docs/design-overview.md` records the intended architecture, config split, and deployment model
 - `docs/agent-map.md` is the short routing guide for coding agents so they can open only the files relevant to the current task
 - `docs/agent-extension-guide.md` gives future coding agents concrete extension rules
+- `deploy/app-shell.txt` contains git-tracked shell intent for hosted/student workspaces without using a worker-denied `*.env` path
 - `deploy/app.env` contains git-tracked deployment settings that should reach the server only through an explicitly requested push/deploy flow
 - `deploy/non-scaffold-app-deployment.md` explains how existing non-GizmoApp apps should fit into the neutral nginx host layout
 - `tests/` contains API and routing smoke tests
@@ -37,7 +38,7 @@ need the reasoning behind:
 
 - why there are two frontend shells in one repo
 - why deployment is path-prefix-aware
-- why `deploy/app.env` and `.env` have different roles
+- why `deploy/app-shell.txt`, `deploy/app.env`, and `.env` have different roles
 - why cron deploys, user services, and nginx snippets are structured the way they are
 
 ## Deployment Model
@@ -133,7 +134,7 @@ The project keeps both blank shells in the same codebase and shares the same bac
 - `server/wsgi_text.py` serves the text-first shell
 - `server/wsgi.py` serves whichever shell is selected by `GIZMOAPP_SHELL`
 
-On the server, the simplest approach is to keep the gunicorn target at `server.wsgi:app` and set the default shell in `deploy/app.env`. Use `GIZMOAPP_SHELL=auto` for agentic/template-derived workspaces. Auto mode inspects changed files in the checkout: text-shell template/assets select `text`, graphical template/assets select `graphical`, and mixed or unclear changes fall back to `graphical`. Use `GIZMOAPP_SHELL=graphical` or `GIZMOAPP_SHELL=text` only when you intentionally want to force one shell. The deploy scripts merge the tracked setting into the live `.env` and restart the service when it changes.
+On the server, the simplest approach is to keep the gunicorn target at `server.wsgi:app` and set the default shell in `deploy/app.env`. Use `GIZMOAPP_SHELL=auto` for open-ended agentic/template-derived workspaces. Auto mode inspects changed files in the checkout: text-shell template/assets select `text`, graphical template/assets select `graphical`, and mixed or unclear changes fall back to `graphical`. When a hosted CodingWorkspace app clearly chooses one public shell, set `deploy/app-shell.txt` to `text` or `graphical`; do not edit `.env` or rely on `deploy/app.env` for hosted shell intent because worker permissions may deny `*.env` edits. For non-hosted deploy flows, a concrete `GIZMOAPP_SHELL=text` or `GIZMOAPP_SHELL=graphical` in tracked `deploy/app.env` remains the env-style deployment setting. The deploy scripts merge the tracked env setting into the live `.env` and restart the service when it changes.
 
 ## Using This As A Starter
 
@@ -147,6 +148,7 @@ For this repository, the intended use is as a starter/template. A derived app sh
 To support that use case, keep these traits intact:
 
 - configuration lives in `.env`
+- hosted shell intent lives in `deploy/app-shell.txt`
 - git-controlled deployment defaults live in `deploy/app.env`
 - deployment steps stay explicit in `README.md` and `deploy/`
 - the backend remains shared and understandable
@@ -162,10 +164,11 @@ For template-derived apps, the intended workflow is:
 
 For deployed template-derived apps, prefer this split:
 
+- `deploy/app-shell.txt` is git-tracked and should hold hosted/student shell intent when a CodingWorkspace app clearly chooses `text` or `graphical`
 - `deploy/app.env` is git-tracked and should hold non-secret runtime choices you want to reach the server through an explicit `git push` plus cron deploy flow
 - `.env` on the server is machine-specific and should hold secrets, ports, DB paths, service names, and per-instance URL prefixes
 
-For example, forcing a change from the text shell to the graphical shell should normally mean editing `deploy/app.env`, then committing and pushing only as part of an explicitly requested deploy flow, not SSHing into the server to edit `.env`.
+For example, forcing a hosted CodingWorkspace preview from the text shell to the graphical shell should normally mean editing `deploy/app-shell.txt`. Forcing a non-hosted deployment should normally mean editing `deploy/app.env`, then committing and pushing only as part of an explicitly requested deploy flow, not SSHing into the server to edit `.env`.
 
 ## API Surface
 
@@ -368,7 +371,7 @@ That wrapper:
 - infers the app name from the repository name
 - checks the repo out under `/home/kevinlb/bin/<repo-name>`
 - serves it at `http://vickrey10.cs.ubc.ca/<repo-name>/`
-- uses the shell declared in `deploy/app.env`, or falls back to `auto` if that file does not set one
+- uses the shell declared in `deploy/app.env`, or falls back to `auto` if that file does not set one. With `auto`, `deploy/app-shell.txt` can still pin hosted/student shell intent inside the app.
 - installs the per-minute git deploy cron job
 - registers the nginx route during the approved deploy action if the one-time router bootstrap has been run
 
