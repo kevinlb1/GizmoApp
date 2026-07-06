@@ -187,6 +187,34 @@ For example, forcing a hosted CodingWorkspace preview from the text shell to the
 
 If `GIZMOAPP_URL_PREFIX` is set, all of those routes live under the prefix. For example, `/demo-app/api/bootstrap`.
 
+## Course AI Model (AI100)
+
+When GizmoApp runs on the AI100 platform, your app gets its own AI API key —
+separate from the coding agent's key, with its own budget, limited to the
+course model. It arrives automatically as environment variables
+(`GIZMO_LLM_API_KEY`, `GIZMO_LLM_BASE_URL`, `GIZMO_LLM_MODEL`); you never need
+to copy or paste a key.
+
+Use it through the bundled helper:
+
+```python
+from .llm import ask   # inside server/gizmoapp_server/ modules
+
+@app.post("/api/haiku")
+def haiku():
+    return {"text": ask("Write a haiku about debugging.")}
+```
+
+`ask(prompt)` covers one-shot questions; `llm.chat(messages)` takes a full
+message list for conversations. Keep `max_tokens` generous (the default is
+fine) — the course model uses part of its budget for internal reasoning and
+very small limits can produce empty replies. Your app's AI budget is small:
+call the model when the user asks for something, not on every page load.
+
+Outside the platform (local development) those variables are unset and the
+helpers raise a clear error; AI features simply won't work locally unless you
+provide your own compatible endpoint via the same variables.
+
 ## Deployment Notes
 
 The commands in this section are manual deployment actions. They may install packages, use `sudo`, write outside the checkout, contact GitHub, edit nginx, reload services, or change cron. Coding agents should not run them unless the user explicitly asks for that deployment action in the current turn.
