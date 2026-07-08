@@ -11,6 +11,23 @@
 8. Do not look for Node just to validate JavaScript in this repo. The scaffold intentionally has no Node dependency; use `make validate` for the full local check or `make js-check` for the Python-based JavaScript structural check.
 9. If a GizmoApp source-repo commit or push is blocked by Git identity or stale `.git/index.lock` trouble, run `make commit-ready`. It configures repo-local `Codex <codex@local>` identity and removes only stale index locks.
 
+## Hosted AI Features Path
+
+When the student asks for an AI/LLM feature in their app (chatbot, summarizer,
+text generation, etc.), use the ready-made helper instead of wiring an SDK by
+hand:
+
+1. `server/gizmoapp_server/llm.py` exposes `ask(prompt)` and `chat(messages)`.
+   They read `GIZMO_LLM_API_KEY` / `GIZMO_LLM_BASE_URL` / `GIZMO_LLM_MODEL`,
+   which the AI100 platform injects automatically. Do not hardcode API keys,
+   do not point the app at any other AI endpoint, and do not reuse the coding
+   agent's `OPENAI_API_KEY` inside the student app.
+2. The app's model spends tokens on internal reasoning: keep `max_tokens`
+   generous (default 1000) or replies may come back empty.
+3. The app key has a small budget. Call the model on user actions, never in
+   render loops or on every page load, and surface errors from `llm.py`
+   helpers to the page rather than swallowing them.
+
 ## Hosted Mini Graphics Path
 
 When this repo is cloned inside CodingWorkspace and the student asks for a visual/canvas app, optimize for a concrete first implementation instead of a long investigation.
