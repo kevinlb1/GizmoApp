@@ -29,6 +29,13 @@ class AgentScaffoldingTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertIn("Node not required", result.stdout)
 
+    def test_always_loaded_agent_context_stays_focused(self):
+        agent_words = (ROOT_DIR / "AGENTS.md").read_text(encoding="utf-8").split()
+        map_words = (ROOT_DIR / "docs" / "agent-map.md").read_text(encoding="utf-8").split()
+
+        self.assertLessEqual(len(agent_words), 700)
+        self.assertLessEqual(len(map_words), 350)
+
     def test_commit_ready_sets_local_identity_and_removes_stale_lock(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = Path(temp_dir)
