@@ -110,15 +110,16 @@ export class SceneRenderer {
     this.handlePointerDown = this.handlePointerDown.bind(this);
     this.handlePointerLeave = this.handlePointerLeave.bind(this);
     this.render = this.render.bind(this);
+    this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
 
     canvas.addEventListener("pointermove", this.handlePointerMove);
     canvas.addEventListener("pointerdown", this.handlePointerDown);
     canvas.addEventListener("pointerleave", this.handlePointerLeave);
+    document.addEventListener("visibilitychange", this.handleVisibilityChange);
     this.resizeObserver.observe(canvas);
     this.updateSceneState();
     this.resize();
     this.drawFrame(performance.now(), 0);
-    this.animationFrame = window.requestAnimationFrame(this.render);
   }
 
   resize() {
@@ -137,6 +138,7 @@ export class SceneRenderer {
     this.canvas.removeEventListener("pointermove", this.handlePointerMove);
     this.canvas.removeEventListener("pointerdown", this.handlePointerDown);
     this.canvas.removeEventListener("pointerleave", this.handlePointerLeave);
+    document.removeEventListener("visibilitychange", this.handleVisibilityChange);
   }
 
   setNodes(nodes) {
@@ -145,6 +147,7 @@ export class SceneRenderer {
       : [];
     this.updateSceneState();
     this.drawFrame(performance.now(), 0);
+    this.updateAnimationState();
   }
 
   updateSceneState() {
@@ -175,6 +178,7 @@ export class SceneRenderer {
     });
     this.updateSceneState();
     this.drawFrame(performance.now(), 0);
+    this.updateAnimationState();
   }
 
   createNodeSprite(node) {
@@ -209,19 +213,44 @@ export class SceneRenderer {
       y: this.pointer.y,
       life: 0,
     });
+    this.updateAnimationState();
   }
 
   handlePointerLeave() {
     this.pointer.active = false;
   }
 
+  handleVisibilityChange() {
+    this.updateAnimationState();
+    if (!document.hidden) {
+      this.drawFrame(performance.now(), 0);
+    }
+  }
+
+  needsAnimation() {
+    return this.nodeSprites.length > 0 || this.ripples.length > 0;
+  }
+
+  updateAnimationState() {
+    if (document.hidden || !this.needsAnimation()) {
+      window.cancelAnimationFrame(this.animationFrame);
+      this.animationFrame = 0;
+      return;
+    }
+    if (!this.animationFrame) {
+      this.lastTimestamp = performance.now();
+      this.animationFrame = window.requestAnimationFrame(this.render);
+    }
+  }
+
   render(timestamp) {
+    this.animationFrame = 0;
     const delta = Math.min(0.033, (timestamp - this.lastTimestamp) * 0.001 || 0.016);
     this.lastTimestamp = timestamp;
 
     this.drawFrame(timestamp, delta);
 
-    this.animationFrame = window.requestAnimationFrame(this.render);
+    this.updateAnimationState();
   }
 
   drawFrame(timestamp, delta) {
@@ -292,8 +321,6 @@ export class SceneRenderer {
     }
 
     this.context.save();
-    this.ripples = this.ripples.filter((ripple) => ripple.life < 1);
-
     for (const ripple of this.ripples) {
       ripple.life += delta * 1.1;
       const radius = Math.min(this.width, this.height) * (0.03 + ripple.life * 0.18);
@@ -303,6 +330,8 @@ export class SceneRenderer {
       this.context.arc(this.width * ripple.x, this.height * ripple.y, radius, 0, Math.PI * 2);
       this.context.stroke();
     }
+
+    this.ripples = this.ripples.filter((ripple) => ripple.life < 1);
 
     this.context.restore();
   }

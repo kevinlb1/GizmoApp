@@ -7,9 +7,9 @@ GizmoApp is a blank webapp template repository intended to be easy for later Cod
 - A touch-friendly graphical shell with sprite/bitmap-first rendering and layered texture support
 - A minimal text-first shell with the same responsive app frame
 - No public starter chrome: Admin remains available by direct route, but blank public shells show no Admin/Install/status controls
-- Lazy capability APIs for audio analysis, search, optimization, mapping, and optional machine learning
+- Opt-in capability APIs for audio analysis, search, optimization, mapping, and optional machine learning
 - Deployment examples for `nginx` in front of `gunicorn`
-- A cron-friendly deploy script that fast-forwards from `main` and reloads `gunicorn` only when runtime changes require it
+- A locked, validated cron deploy flow with backups, readiness checks, retryable rollback, and selective gunicorn reloads
 
 ## Why No Frontend Build Step
 
@@ -26,6 +26,7 @@ The scaffold intentionally avoids Node and a frontend bundler. That keeps deploy
 - `docs/agent-map.md` is the short routing guide for coding agents so they can open only the files relevant to the current task
 - `docs/agent-extension-guide.md` gives future coding agents concrete extension rules
 - `deploy/app-shell.txt` contains git-tracked shell intent for hosted/student workspaces without using a worker-denied `*.env` path
+- `deploy/features.txt` contains git-tracked intent for optional public admin and capability routes
 - `deploy/app.env` contains git-tracked deployment settings that should reach the server only through an explicitly requested push/deploy flow
 - `deploy/non-scaffold-app-deployment.md` explains how existing non-GizmoApp apps should fit into the neutral nginx host layout
 - `tests/` contains API and routing smoke tests
@@ -173,7 +174,27 @@ For example, forcing a hosted CodingWorkspace preview from the text shell to the
 ## API Surface
 
 - `GET /api/bootstrap` returns app metadata, health details, and available capability summaries
-- `GET /api/capabilities` returns available capability modules and optional dependency status
+- `GET /api/capabilities` returns capability status, including whether each optional route is disabled
+- `GET /healthz` is a lightweight process liveness check
+- `GET /readyz` verifies that SQLite is reachable and at the expected schema version
+
+The routes below are disabled by default. Add only the required slugs to
+`deploy/features.txt`:
+
+- `search`: `GET /api/search?q=...`
+- `mapping`: `GET /api/map/default`
+- `machine-learning`: `GET /api/ml/status` and `POST /api/ml/kmeans`
+- `optimization`: `POST /api/optimize/route`
+- `audio`: `POST /api/audio/analyze`
+- `sample-nodes`: `GET` and `POST /api/sample-nodes`
+- `admin`: `GET /admin/`
+
+All JSON endpoints require object-shaped JSON, return structured JSON errors
+with request IDs, reject non-finite numbers, and enforce bounded payloads. The
+generated nginx route also caps request bodies.
+
+Capability behavior:
+
 - `GET /api/search?q=...` searches persisted sample records in SQLite
 - `GET /api/map/default` returns OpenStreetMap settings and the default UBC Vancouver location when mapping is requested
 - `GET /api/ml/status` reports whether scikit-learn is installed
@@ -182,8 +203,6 @@ For example, forcing a hosted CodingWorkspace preview from the text shell to the
 - `POST /api/audio/analyze` summarizes browser-captured sample arrays
 - `GET /api/sample-nodes` lists optional sample records from SQLite
 - `POST /api/sample-nodes` inserts an optional sample record for future experimentation
-- `GET /healthz` returns a simple JSON health response
-- `GET /admin/` shows a small admin summary page
 
 If `GIZMOAPP_URL_PREFIX` is set, all of those routes live under the prefix. For example, `/demo-app/api/bootstrap`.
 
@@ -211,9 +230,11 @@ fine) — the course model uses part of its budget for internal reasoning and
 very small limits can produce empty replies. Your app's AI budget is small:
 call the model when the user asks for something, not on every page load.
 
-Outside the platform (local development) those variables are unset and the
-helpers raise a clear error; AI features simply won't work locally unless you
-provide your own compatible endpoint via the same variables.
+The helper requires all three settings and fails closed if any are missing. It
+uses a bounded timeout shorter than gunicorn's request timeout, one retry, input
+validation, and safe user-displayable `CourseLLMError` messages. Outside the
+platform those variables are unset, so AI features remain unavailable unless
+you deliberately provide a compatible endpoint through the same variables.
 
 ## Deployment Notes
 
@@ -380,7 +401,8 @@ This script:
 - creates the virtualenv and installs Python dependencies
 - initializes the SQLite database
 - writes a user-level systemd service at `~/.config/systemd/user/myapp.service`
-- installs a once-per-minute cron entry for `scripts/deploy_from_git.sh`
+- installs a once-per-minute cron entry through `scripts/run_deploy_cron.sh`,
+  which bounds deploy-log growth
 - generates an nginx location snippet at `/home/kevinlb/bin/myapp/var/generated/nginx-location.conf`, including a redirect from `/myapp` to `/myapp/`
 - if the one-time nginx router bootstrap has been installed, copies the snippet into `/etc/nginx/gizmoapp-instances/myapp.conf` and reloads nginx automatically
 
@@ -435,7 +457,7 @@ ALLOW_DEPLOY_ACTIONS=1 ~/bin/deploy-gizmoapp-repo git@github.com:YOUR_ACCOUNT/YO
 
 5. Check the user service on the server.
 
-6. Visit `http://vickrey10.cs.ubc.ca/myapp/`.
+6. Visit `https://vickrey10.cs.ubc.ca/myapp/`.
 
 If the app should stay running even when the deployment user is logged out, a
 privileged user may also need to enable linger for the deployment account.
@@ -444,16 +466,28 @@ privileged user may also need to enable linger for the deployment account.
 
 Static asset changes do not require a `gunicorn` reload because Flask serves them from disk on each request. Backend Python and template changes do require a reload so workers pick up the new code. The deploy script detects that difference and only attempts a reload when needed.
 
+Gunicorn writes access/error output to stdout/stderr for journald rotation, uses
+`/dev/shm` for worker heartbeats when available, and disables the optional
+single-path control socket so multiple app instances cannot collide.
+
 ### Cron deployment
 
-The example cron entry in `deploy/user-crontab.example` calls `scripts/deploy_from_git.sh` once per minute. That script:
+The example cron entry calls `scripts/run_deploy_cron.sh` once per minute. The
+wrapper rotates bounded deploy logs and calls the locked deploy transaction,
+which:
 
 - Refuses to deploy if tracked files are dirty
-- Fast-forwards the live checkout from `origin/main`
+- Refuses to overlap another deploy and preserves local commits
+- Fast-forwards the live checkout from `origin/main`, while keeping the prior
+  commit available for rollback
 - Merges git-tracked deployment settings from `deploy/app.env` into the live `.env`
 - Reinstalls Python packages only when `server/requirements.txt` changes
-- Re-initializes the database idempotently
+- Runs the full validation suite before activation
+- Creates a consistent SQLite backup and applies transactional migrations
 - Reloads `gunicorn` when runtime files changed and a reload strategy is configured
+- Requires `/readyz` to pass before advancing the deployed-commit marker
+- Restores the prior checkout and restarts it if activation fails, allowing the
+  next cron run to retry
 
 If a pushed commit changes `deploy/app.env`, the deploy script restarts the user service so the new environment takes effect. This is the intended way to send settings such as shell changes to the server without manual SSH edits.
 
@@ -463,6 +497,9 @@ When you use `scripts/install_deployment_instance.sh` with `ALLOW_DEPLOY_ACTIONS
 
 If you have older app installs that were created before this cron hardening, re-run `scripts/install_deployment_instance.sh` for that app or update the crontab entry so it includes those two environment variables before calling `scripts/deploy_from_git.sh`.
 
-### HTTPS and installability
+### HTTPS
 
-Reliable PWA installation on iPhone and Chromium-based browsers requires HTTPS. If `vickrey10.cs.ubc.ca` is only available over plain HTTP, the app will still run in the browser, but install prompts and standalone behavior will be limited or unavailable.
+Generated deployment instructions use the host's HTTPS URL. The blank starter
+does not register a service worker or advertise offline installation; a derived
+app should add a versioned cache and explicit offline/update UX only when its
+requirements genuinely include offline behavior.

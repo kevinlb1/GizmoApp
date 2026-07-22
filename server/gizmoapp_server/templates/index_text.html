@@ -6,13 +6,8 @@
     <title>{{ app_name }}</title>
     <meta name="description" content="{{ shell_description }}">
     <meta name="theme-color" content="{{ theme_color }}">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="{{ app_name }}">
     <base href="{{ base_href }}">
-    <link rel="manifest" href="{{ manifest_url }}">
     <link rel="icon" href="{{ icon_url }}" sizes="192x192">
-    <link rel="apple-touch-icon" href="{{ apple_touch_icon_url }}">
     <link rel="stylesheet" href="{{ shared_asset_base }}base.css">
     <link rel="stylesheet" href="{{ asset_base }}styles.css">
   </head>
@@ -24,8 +19,10 @@
         </section>
       </main>
     </div>
+    <div id="app-error" class="app-error" role="alert" aria-live="assertive" hidden></div>
 
     <script id="gizmoapp-config" type="application/json">{{ client_config | tojson }}</script>
+    <script src="{{ shared_asset_base }}boot.js"></script>
     <script type="module" src="{{ asset_base }}main.js"></script>
   </body>
 </html>

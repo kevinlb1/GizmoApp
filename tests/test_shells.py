@@ -34,6 +34,10 @@ class ShellSelectionTests(unittest.TestCase):
         self.assertEqual(resolve_shell_variant("graphical"), "graphical")
         self.assertEqual(resolve_shell_variant("auto"), "graphical")
 
+    def test_resolver_rejects_unknown_shells(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Unknown shell"):
+            resolve_shell_variant("typo")
+
 
 if __name__ == "__main__":
     unittest.main()

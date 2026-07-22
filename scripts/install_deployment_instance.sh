@@ -70,6 +70,14 @@ port_is_reserved() {
 
 pick_port() {
   if [[ -n "${PORT}" ]]; then
+    if [[ ! "${PORT}" =~ ^[0-9]+$ ]] || (( PORT < 1024 || PORT > 65535 )); then
+      echo "--port must be an integer between 1024 and 65535." >&2
+      exit 1
+    fi
+    if port_is_reserved "${PORT}"; then
+      echo "Port ${PORT} is already reserved by a listener or another GizmoApp instance." >&2
+      exit 1
+    fi
     echo "${PORT}"
     return 0
   fi
@@ -257,20 +265,41 @@ if [[ ! -f "${ENV_HELPER}" ]]; then
 fi
 
 mkdir -p "${BASE_DIR}"
+if ! command -v flock >/dev/null 2>&1; then
+  echo "flock is required for safe concurrent instance installation." >&2
+  exit 1
+fi
+exec 8>"${BASE_DIR}/.gizmoapp-install.lock"
+flock 8
 
+UPDATING_EXISTING=0
 if [[ -d "${APP_DIR}/.git" ]]; then
+  UPDATING_EXISTING=1
+  if [[ -n "$(git -C "${APP_DIR}" status --porcelain)" ]]; then
+    echo "${APP_DIR} has local changes or untracked files. Refusing to overwrite them." >&2
+    exit 1
+  fi
+  current_branch="$(git -C "${APP_DIR}" branch --show-current)"
+  if [[ "${current_branch}" != "${BRANCH}" ]]; then
+    echo "${APP_DIR} is on branch ${current_branch:-detached}, not ${BRANCH}. Reconcile it manually." >&2
+    exit 1
+  fi
   git -C "${APP_DIR}" remote set-url origin "${REPO_URL}"
+  git -C "${APP_DIR}" fetch origin "${BRANCH}"
+  read -r local_ahead remote_ahead <<<"$(git -C "${APP_DIR}" rev-list --left-right --count HEAD...origin/${BRANCH})"
+  if (( local_ahead > 0 )); then
+    echo "${APP_DIR} has local commits not present on origin/${BRANCH}. Refusing to overwrite them." >&2
+    exit 1
+  fi
+  git -C "${APP_DIR}" merge --ff-only "origin/${BRANCH}"
 else
   if [[ -e "${APP_DIR}" ]] && [[ -n "$(find "${APP_DIR}" -mindepth 1 -maxdepth 1 2>/dev/null)" ]]; then
     echo "${APP_DIR} exists and is not an empty git checkout. Refusing to overwrite it." >&2
     exit 1
   fi
-  rm -rf "${APP_DIR}"
-  git clone "${REPO_URL}" "${APP_DIR}"
+  rmdir "${APP_DIR}" 2>/dev/null || true
+  git clone --branch "${BRANCH}" --single-branch "${REPO_URL}" "${APP_DIR}"
 fi
-
-git -C "${APP_DIR}" fetch origin "${BRANCH}"
-git -C "${APP_DIR}" checkout -B "${BRANCH}" "origin/${BRANCH}"
 
 if [[ ! -x "${APP_DIR}/scripts/install_checkout.sh" ]]; then
   echo "The repository at ${REPO_URL} does not contain scripts/install_checkout.sh." >&2
@@ -283,7 +312,25 @@ if [[ ! -f "${APP_DIR}/.env" ]]; then
 fi
 chmod 600 "${APP_DIR}/.env"
 
-PORT="$(pick_port)"
+if (( UPDATING_EXISTING != 0 )) && [[ -z "${PORT}" ]] && [[ -f "${APP_DIR}/.env" ]]; then
+  existing_port="$(get_env_value "${APP_DIR}/.env" GIZMOAPP_PORT)"
+  if [[ "${existing_port}" =~ ^[0-9]+$ ]] && (( existing_port >= 1024 && existing_port <= 65535 )); then
+    PORT="${existing_port}"
+  fi
+fi
+if [[ -z "${PORT}" ]] || (( UPDATING_EXISTING == 0 )); then
+  PORT="$(pick_port)"
+fi
+if [[ ! "${PORT}" =~ ^[0-9]+$ ]] || (( PORT < 1024 || PORT > 65535 )); then
+  echo "Selected port must be an integer between 1024 and 65535." >&2
+  exit 1
+fi
+if ! { (( UPDATING_EXISTING != 0 )) && [[ "${PORT}" == "${existing_port:-}" ]]; }; then
+  if port_is_reserved "${PORT}"; then
+    echo "Port ${PORT} is already reserved by a listener or another GizmoApp instance." >&2
+    exit 1
+  fi
+fi
 tracked_shell=""
 if [[ -f "${APP_DIR}/deploy/app.env" ]]; then
   tracked_shell="$(get_env_value "${APP_DIR}/deploy/app.env" GIZMOAPP_SHELL)"
@@ -297,6 +344,9 @@ set_env_value "${APP_DIR}/.env" GIZMOAPP_DB_PATH "${APP_DIR}/var/data/${NAME}.sq
 set_env_value "${APP_DIR}/.env" GIZMOAPP_PORT "${PORT}"
 set_env_value "${APP_DIR}/.env" GIZMOAPP_DEPLOY_BRANCH "${BRANCH}"
 set_env_value "${APP_DIR}/.env" GIZMOAPP_SYSTEMD_USER_SERVICE "${SERVICE_NAME}"
+set_env_value "${APP_DIR}/.env" GIZMOAPP_ENV production
+set_env_value "${APP_DIR}/.env" GIZMOAPP_AUTO_MIGRATE 0
+set_env_value "${APP_DIR}/.env" GIZMOAPP_TRUST_PROXY 1
 
 current_secret="$(get_env_value "${APP_DIR}/.env" GIZMOAPP_SECRET_KEY)"
 if [[ -z "${current_secret}" || "${current_secret}" == "change-me-before-production" || "${current_secret}" == "dev-only-secret" ]]; then
@@ -321,6 +371,8 @@ ExecReload=/bin/kill -HUP \$MAINPID
 Restart=on-failure
 RestartSec=3
 PrivateTmp=true
+NoNewPrivileges=true
+UMask=0077
 
 [Install]
 WantedBy=default.target
@@ -333,6 +385,7 @@ location = ${URL_PREFIX} {
 }
 
 location ${URL_PREFIX}/ {
+    client_max_body_size 1m;
     proxy_pass http://127.0.0.1:${PORT};
     proxy_http_version 1.1;
     proxy_set_header Host \$host;
@@ -342,24 +395,31 @@ location ${URL_PREFIX}/ {
 }
 EOF
 
-register_nginx_instance "${NGINX_SNIPPET}"
-
+service_started=0
 if command -v systemctl >/dev/null 2>&1; then
   if systemctl --user daemon-reload; then
     if (( SKIP_SERVICE_START == 0 )); then
-      if systemctl --user enable --now "${SERVICE_NAME}"; then
+      if systemctl --user enable "${SERVICE_NAME}" && systemctl --user restart "${SERVICE_NAME}"; then
         echo "Enabled and started user service ${SERVICE_NAME}."
+        service_started=1
       else
-        echo "Wrote ${SERVICE_FILE}, but could not enable/start it automatically."
+        echo "Wrote ${SERVICE_FILE}, but could not enable/start it automatically." >&2
+        exit 1
       fi
     else
       echo "Wrote ${SERVICE_FILE}. Service start was skipped."
     fi
   else
-    echo "Wrote ${SERVICE_FILE}, but systemctl --user is not ready in this session."
+    echo "Wrote ${SERVICE_FILE}, but systemctl --user is not ready in this session." >&2
+    if (( SKIP_SERVICE_START == 0 )); then
+      exit 1
+    fi
   fi
 else
-  echo "Wrote ${SERVICE_FILE}, but systemctl is not available on this machine."
+  echo "Wrote ${SERVICE_FILE}, but systemctl is not available on this machine." >&2
+  if (( SKIP_SERVICE_START == 0 )); then
+    exit 1
+  fi
 fi
 
 if command -v loginctl >/dev/null 2>&1; then
@@ -369,7 +429,17 @@ if command -v loginctl >/dev/null 2>&1; then
   fi
 fi
 
-CRON_LINE="* * * * * cd ${APP_DIR} && ALLOW_DEPLOY_ACTIONS=1 XDG_RUNTIME_DIR=${USER_RUNTIME_DIR} DBUS_SESSION_BUS_ADDRESS=unix:path=${USER_RUNTIME_DIR}/bus ${APP_DIR}/scripts/deploy_from_git.sh >> ${APP_DIR}/var/log/deploy-cron.log 2>&1"
+if (( SKIP_SERVICE_START == 0 && service_started != 0 )); then
+  "${APP_DIR}/.venv/bin/python" "${APP_DIR}/scripts/check_runtime_ready.py" \
+    --url "http://127.0.0.1:${PORT}${URL_PREFIX}/readyz" --timeout 25
+  mkdir -p "${APP_DIR}/var/run"
+  git -C "${APP_DIR}" rev-parse HEAD > "${APP_DIR}/var/run/deployed-commit.tmp"
+  mv "${APP_DIR}/var/run/deployed-commit.tmp" "${APP_DIR}/var/run/deployed-commit"
+fi
+
+register_nginx_instance "${NGINX_SNIPPET}"
+
+CRON_LINE="* * * * * cd ${APP_DIR} && ALLOW_DEPLOY_ACTIONS=1 XDG_RUNTIME_DIR=${USER_RUNTIME_DIR} DBUS_SESSION_BUS_ADDRESS=unix:path=${USER_RUNTIME_DIR}/bus ${APP_DIR}/scripts/run_deploy_cron.sh"
 if (( SKIP_CRON == 0 )); then
   install_cron_entry "${CRON_LINE}"
 else
@@ -385,7 +455,7 @@ echo "  Shell: ${effective_shell}"
 if [[ -n "${tracked_shell}" ]]; then
   echo "  Shell source: deploy/app.env"
 fi
-echo "  URL: http://${DOMAIN}${URL_PREFIX}/"
+echo "  URL: https://${DOMAIN}${URL_PREFIX}/"
 echo "  Local gunicorn port: ${PORT}"
 echo "  User service file: ${SERVICE_FILE}"
 echo "  Generated nginx snippet: ${NGINX_SNIPPET}"

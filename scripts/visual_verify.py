@@ -241,6 +241,12 @@ def capture_visuals(base_url: str, output_dir: Path, viewports: tuple[dict[str, 
                     device_scale_factor=float(viewport.get("device_scale_factor", 1)),
                 )
                 screenshot_path = output_dir / f"graphical-{name}.png"
+                browser_errors: list[str] = []
+                page.on("pageerror", lambda error: browser_errors.append(str(error)))
+                page.on(
+                    "console",
+                    lambda message: browser_errors.append(message.text) if message.type == "error" else None,
+                )
                 try:
                     page.goto(base_url, wait_until="networkidle", timeout=15000)
                     page.wait_for_selector("#scene-canvas", timeout=5000)
@@ -252,14 +258,17 @@ def capture_visuals(base_url: str, output_dir: Path, viewports: tuple[dict[str, 
                     page.screenshot(path=str(screenshot_path), full_page=True)
                     metrics = page.evaluate(CANVAS_METRICS_JS)
                     checks = check_canvas_metrics(metrics)
+                    failures = [*checks.failures]
+                    if browser_errors:
+                        failures.extend(f"browser error: {error}" for error in browser_errors)
                     results.append(
                         {
                             "viewport": viewport,
                             "screenshot": screenshot_path.name,
                             "metrics": metrics,
-                            "failures": checks.failures,
+                            "failures": failures,
                             "warnings": checks.warnings,
-                            "ok": checks.ok,
+                            "ok": not failures,
                         }
                     )
                 finally:

@@ -49,9 +49,12 @@ request.
   model credentials; never hard-code keys or reuse the coding agent's key.
   Call the model only in response to user actions and surface helper errors.
 - Audio, search, optimization, maps, and ML: use the matching lazy capability
-  module and read only its section in `docs/agent-extension-guide.md`.
+  module, add its slug to tracked `deploy/features.txt`, and read only its
+  section in `docs/agent-extension-guide.md`. Optional routes are off until
+  that tracked intent enables them.
 - New Python dependency: add it to `server/requirements.txt`. Keep optional ML
-  dependencies in `server/requirements-ml.txt`.
+  dependencies in `server/requirements-ml.txt`, pin direct runtime versions,
+  and validate the upgrade deliberately.
 
 ## Validation And Safety
 

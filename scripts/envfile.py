@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import shlex
 import sys
+import tempfile
 from pathlib import Path
 
 
@@ -36,13 +38,19 @@ def parse_assignment(line: str, line_number: int) -> tuple[str, str] | None:
 
 
 def iter_assignments(path: Path):
+    seen: set[str] = set()
     for index, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
         if not line.strip() or line.lstrip().startswith("#"):
             continue
 
         assignment = parse_assignment(line, index)
-        if assignment is not None:
-            yield assignment
+        if assignment is None:
+            raise SystemExit(f"Invalid env syntax on line {index}: expected KEY=VALUE.")
+        key, _ = assignment
+        if key in seen:
+            raise SystemExit(f"Duplicate env key {key!r} on line {index}.")
+        seen.add(key)
+        yield assignment
 
 
 def quote_value(value: str) -> str:
@@ -102,7 +110,23 @@ def cmd_set(args: argparse.Namespace) -> int:
     if not replaced:
         updated_lines.append(assignment)
 
-    args.file.write_text("\n".join(updated_lines) + "\n", encoding="utf-8")
+    args.file.parent.mkdir(parents=True, exist_ok=True)
+    existing_mode = args.file.stat().st_mode & 0o777 if args.file.exists() else 0o600
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{args.file.name}.",
+        dir=args.file.parent,
+        text=True,
+    )
+    temporary_path = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write("\n".join(updated_lines) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.chmod(temporary_path, existing_mode)
+        os.replace(temporary_path, args.file)
+    finally:
+        temporary_path.unlink(missing_ok=True)
     return 0
 
 

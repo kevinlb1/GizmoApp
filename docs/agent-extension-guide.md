@@ -19,6 +19,11 @@ is for task-specific details after the map points you here.
 Keep new work prefix-aware by building routes with `scoped_path` and reading API
 URLs from the injected browser config instead of hard-coding `/api`.
 
+Optional public routes are fail-closed. When a requested feature uses admin,
+audio, machine learning, mapping, optimization, sample-node, or search routes,
+add the matching slug from `deploy/features.txt` in the same commit. Do not
+enable unrelated routes “just in case.”
+
 ## Persistence
 
 Use SQLite first. Add schema changes as migrations in `SCHEMA_MIGRATIONS` inside
@@ -122,6 +127,8 @@ sample arrays to `POST /api/audio/analyze` for dependency-free analysis. Add
 heavier audio libraries only when the user asks for transcription, classification,
 or signal processing that needs them.
 
+Enable the route by adding `audio` to `deploy/features.txt`.
+
 When the app is embedded in CodingWorkspace, the preview iframe grants
 microphone permission policy, but the browser still requires a user gesture and
 the user's permission. Keep audio setup behind an explicit button or similar
@@ -138,16 +145,23 @@ search service. If the requested feature needs external web search or a hosted
 search API, prefer Bing or Tavily and do not use DuckDuckGo as the default
 provider.
 
+Enable this route with `search` in `deploy/features.txt`; add `sample-nodes`
+only if the app also uses the scaffold's sample-record write API.
+
 ## Optimization
 
 Start with `POST /api/optimize/route` and pure-Python algorithms. Bring in a
 specialized solver only when the requested optimization problem outgrows that
 simple path.
 
+Enable this route with `optimization` in `deploy/features.txt`.
+
 ## Mapping And Location
 
 Use OpenStreetMap when mapping is requested. `GET /api/map/default` returns the
 tile URL template, attribution, and default location for mapping features.
+
+Enable this route with `mapping` in `deploy/features.txt`.
 
 For requested location-dependent features, assume the user is at UBC Vancouver
 only when they give no different location.
@@ -162,3 +176,6 @@ ALLOW_NETWORK_INSTALL=1 make install-ml
 
 Do not add scikit-learn to `server/requirements.txt` unless ML becomes mandatory
 for the base template.
+
+Enable the status and KMeans routes with `machine-learning` in
+`deploy/features.txt`.

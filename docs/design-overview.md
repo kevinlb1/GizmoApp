@@ -35,7 +35,8 @@ shape of the project is meant to support:
 The app has three main layers:
 
 1. Flask backend
-   - Serves HTML, JSON API routes, health/admin endpoints, and static assets.
+   - Serves HTML, core JSON/health/readiness routes, opt-in capability/admin
+     routes, and static assets.
 2. SQLite persistence
    - Stores migration metadata and app state/events for future feature work.
 3. Shell-specific frontend
@@ -63,7 +64,10 @@ every derived app:
   checks through `scripts/visual_verify.py`
 
 Use these modules first when a user asks for those domains. Install optional
-dependencies only when the requested feature needs them.
+dependencies only when the requested feature needs them. Public feature routes
+are disabled by default and enabled through tracked `deploy/features.txt`, so a
+blank starter exposes only its core shell, bootstrap, health, readiness, and
+capability-discovery surfaces.
 
 ## Shell Model
 
@@ -100,7 +104,7 @@ The scaffold is designed to run at either:
 - `/`
 - or a path prefix such as `/<repo-name>/`
 
-That is why the backend, manifest, static asset URLs, and API routes all use a
+That is why the backend, static asset URLs, and API routes all use a
 configurable `GIZMOAPP_URL_PREFIX`.
 
 This is important because the deployment model assumes multiple independent apps
@@ -126,6 +130,12 @@ of:
 - `text`
 - `graphical`
 
+### Git-tracked optional feature intent
+
+`deploy/features.txt` enables only the public surfaces a derived app actually
+uses. Invalid names fail startup rather than silently expanding the app's route
+surface.
+
 ### Live machine-specific settings
 
 `.env` is for settings that should stay local to one deployed checkout:
@@ -135,6 +145,9 @@ of:
 - `GIZMOAPP_DB_PATH`
 - `GIZMOAPP_SYSTEMD_USER_SERVICE`
 - `GIZMOAPP_URL_PREFIX`
+- `GIZMOAPP_ENV`
+- `GIZMOAPP_AUTO_MIGRATE`
+- `GIZMOAPP_TRUST_PROXY`
 
 For local development, the app reads `deploy/app.env` and then `.env`. If the
 requested shell is `auto`, it also checks `deploy/app-shell.txt` before falling
@@ -184,6 +197,12 @@ The deploy process is intentionally selective:
 - Python or template changes do require the service to reload or restart
 - `deploy/app.env` changes require a restart so the new environment takes effect
 
+Deploys are serialized with `flock`. A candidate commit is validated, backed
+up, migrated, reloaded, and checked through `/readyz` before its commit marker
+is advanced. Failures restore the previous tracked checkout and restart the
+previous service so the next cron run can retry. SQLite uses WAL, a busy timeout,
+transactional migrations, and consistent pre-migration backups.
+
 Cron-driven deploys that call `systemctl --user` need the user systemd bus
 environment. The scaffold therefore treats `XDG_RUNTIME_DIR` and
 `DBUS_SESSION_BUS_ADDRESS` as part of the deployment design, not an incidental
@@ -195,14 +214,14 @@ The scaffold is optimized for:
 
 - one host
 - modest traffic
-- anonymous/public access
+- anonymous public shells with optional routes disabled by default
 - incremental feature development
 
 It is not currently optimized for:
 
 - multi-host orchestration
 - background job queues
-- offline-first behavior
+- offline-first behavior (the starter intentionally has no service worker)
 - secret management beyond per-checkout `.env`
 - high-write database workloads
 - account-bound map providers unless the user explicitly asks for them

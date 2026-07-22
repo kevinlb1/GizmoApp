@@ -145,6 +145,31 @@ a {
   box-shadow: var(--shadow-soft);
 }
 
+.app-error {
+  position: fixed;
+  z-index: 1000;
+  inset: auto 1rem 1rem 1rem;
+  max-width: 44rem;
+  margin-inline: auto;
+  border: 1px solid color-mix(in srgb, var(--danger) 42%, transparent);
+  border-radius: var(--radius);
+  background: #fff7f5;
+  color: #682219;
+  box-shadow: var(--shadow);
+  padding: 0.9rem 1rem;
+  line-height: 1.45;
+}
+
+.app-error strong,
+.app-error span {
+  display: block;
+}
+
+.app-error span {
+  margin-top: 0.25rem;
+  font-size: 0.9rem;
+}
+
 @media (max-width: 720px) {
   .app-topbar {
     grid-template-columns: auto minmax(0, 1fr);

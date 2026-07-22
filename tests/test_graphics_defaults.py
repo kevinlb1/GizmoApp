@@ -21,6 +21,13 @@ class GraphicsDefaultsTests(unittest.TestCase):
         self.assertIn("this.context.drawImage", source)
         self.assertIn("createNodeSprite", source)
 
+    def test_blank_scene_does_not_start_a_permanent_animation_loop(self) -> None:
+        source = SCENE_JS.read_text(encoding="utf-8")
+        constructor = source[source.index("constructor(canvas)"):source.index("resize()")]
+        self.assertNotIn("requestAnimationFrame", constructor)
+        self.assertIn("needsAnimation()", source)
+        self.assertIn("document.hidden", source)
+
 
 if __name__ == "__main__":
     unittest.main()

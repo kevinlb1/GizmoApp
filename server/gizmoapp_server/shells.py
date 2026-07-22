@@ -95,7 +95,8 @@ def resolve_shell_variant(shell_variant: str | None, repo_root: Path | None = No
     if variant in SHELL_DEFINITIONS:
         return variant
     if variant != AUTO_SHELL:
-        return FALLBACK_SHELL
+        choices = ", ".join(available_shell_choices())
+        raise ValueError(f"Unknown shell {variant!r}; expected one of: {choices}.")
     if repo_root is not None:
         detected = classify_shell_paths(changed_paths_since_base(repo_root))
         if detected is not None:

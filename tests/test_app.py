@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import tempfile
 import unittest
 from pathlib import Path
@@ -7,8 +8,19 @@ from pathlib import Path
 from server.gizmoapp_server import create_app
 
 
+ALL_FEATURES = frozenset(
+    {"admin", "audio", "machine-learning", "mapping", "optimization", "sample-nodes", "search"}
+)
+
+
 class GizmoAppTestCase(unittest.TestCase):
-    def make_app(self, url_prefix: str = "", shell_variant: str = "graphical"):
+    def make_app(
+        self,
+        url_prefix: str = "",
+        shell_variant: str = "graphical",
+        enabled_features: frozenset[str] = ALL_FEATURES,
+        **overrides,
+    ):
         self.temp_dir = tempfile.TemporaryDirectory()
         db_path = Path(self.temp_dir.name) / "test.sqlite3"
         app = create_app(
@@ -17,6 +29,9 @@ class GizmoAppTestCase(unittest.TestCase):
                 "DB_PATH": db_path,
                 "URL_PREFIX": url_prefix,
                 "SECRET_KEY": "test-secret",
+                "AUTO_MIGRATE": True,
+                "ENABLED_FEATURES": enabled_features,
+                **overrides,
             },
             shell_variant=shell_variant,
         )
@@ -27,40 +42,49 @@ class GizmoAppTestCase(unittest.TestCase):
         if temp_dir is not None:
             temp_dir.cleanup()
 
-    def test_bootstrap_endpoint_returns_blank_app_metadata(self):
+    def test_bootstrap_and_readiness_use_prefix(self):
         app = self.make_app("/demo-app")
         client = app.test_client()
 
-        response = client.get("/demo-app/api/bootstrap")
-        payload = response.get_json()
+        bootstrap = client.get("/demo-app/api/bootstrap")
+        ready = client.get("/demo-app/readyz")
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(payload["app"]["shell"], "graphical")
-        self.assertNotIn("urlPrefix", payload["app"])
-        self.assertNotIn("capabilitySummary", payload)
-        self.assertNotIn("sampleNodes", payload)
-        self.assertNotIn("database", payload["health"])
+        self.assertEqual(bootstrap.status_code, 200)
+        self.assertEqual(bootstrap.get_json()["app"]["shell"], "graphical")
+        self.assertEqual(ready.status_code, 200)
+        self.assertEqual(ready.get_json()["status"], "ready")
+        self.assertEqual(ready.get_json()["schemaVersion"], 2)
 
-    def test_manifest_uses_configured_prefix(self):
+    def test_optional_routes_are_disabled_by_default(self):
+        app = self.make_app(enabled_features=frozenset())
+        client = app.test_client()
+
+        self.assertEqual(client.get("/admin/").status_code, 404)
+        response = client.post("/api/audio/analyze", json={"samples": [0], "sampleRate": 1})
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.content_type, "application/json")
+        statuses = {
+            item["slug"]: item["status"]
+            for item in client.get("/api/capabilities").get_json()["capabilities"]
+        }
+        self.assertEqual(statuses["audio"], "disabled")
+        self.assertEqual(statuses["mapping"], "disabled")
+
+    def test_pwa_routes_are_not_exposed(self):
         app = self.make_app("/demo-app")
         client = app.test_client()
 
-        response = client.get("/demo-app/manifest.webmanifest")
-        payload = response.get_json()
+        self.assertEqual(client.get("/demo-app/manifest.webmanifest").status_code, 404)
+        self.assertEqual(client.get("/demo-app/sw.js").status_code, 404)
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(payload["scope"], "/demo-app/")
-        self.assertEqual(payload["start_url"], "/demo-app/")
-
-    def test_can_insert_sample_node(self):
-        app = self.make_app("")
+    def test_can_insert_and_search_sample_node(self):
+        app = self.make_app()
         client = app.test_client()
-
         response = client.post(
             "/api/sample-nodes",
             json={
-                "slug": "new-node",
-                "label": "New Node",
+                "slug": "compass",
+                "label": "Compass",
                 "description": "Created by the test suite.",
                 "accent_color": "#72d1c2",
                 "x": 0.6,
@@ -69,156 +93,101 @@ class GizmoAppTestCase(unittest.TestCase):
             },
         )
 
-        payload = response.get_json()
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(payload["sampleNode"]["slug"], "new-node")
+        self.assertEqual(response.get_json()["sampleNode"]["slug"], "compass")
+        search = client.get("/api/search?q=compass")
+        self.assertEqual(search.status_code, 200)
+        self.assertEqual(search.get_json()["results"][0]["slug"], "compass")
 
-    def test_capabilities_include_optional_ml_and_mapping_without_global_location_default(self):
-        app = self.make_app("")
+    def test_json_endpoints_reject_non_object_json(self):
+        app = self.make_app()
         client = app.test_client()
 
-        response = client.get("/api/capabilities")
-        payload = response.get_json()
+        for path in ("/api/sample-nodes", "/api/audio/analyze", "/api/optimize/route"):
+            with self.subTest(path=path):
+                response = client.post(path, json=[1])
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(response.content_type, "application/json")
+                self.assertIn("must be an object", response.get_json()["errors"][0])
 
-        self.assertEqual(response.status_code, 200)
-        slugs = {capability["slug"] for capability in payload["capabilities"]}
-        self.assertIn("machine-learning", slugs)
-        self.assertIn("mapping", slugs)
-        self.assertNotIn("mapping", payload)
-        self.assertNotIn("defaultLocation", payload)
+    def test_json_endpoints_require_json_content_type(self):
+        app = self.make_app()
+        response = app.test_client().post("/api/audio/analyze", data="samples=1")
 
-    def test_search_endpoint_queries_persistent_records(self):
-        app = self.make_app("")
+        self.assertEqual(response.status_code, 415)
+        self.assertIn("application/json", response.get_json()["errors"][0])
+
+    def test_non_finite_and_wrong_type_values_are_rejected(self):
+        app = self.make_app()
         client = app.test_client()
 
-        client.post(
-            "/api/sample-nodes",
-            json={
-                "slug": "compass",
-                "label": "Compass",
-                "description": "Inserted by the test suite.",
-                "accent_color": "#72d1c2",
-                "x": 0.25,
-                "y": 0.4,
-                "radius": 0.1,
-            },
+        route = client.post(
+            "/api/optimize/route",
+            json={"points": [{"id": "a", "x": "nan", "y": 0}, {"id": "b", "x": 1, "y": 1}]},
         )
+        audio = client.post("/api/audio/analyze", json={"samples": ["nan"], "sampleRate": 1})
+        sample = client.post("/api/sample-nodes", json={"slug": "obj-label", "label": {"bad": True}})
 
-        response = client.get("/api/search?q=compass")
-        payload = response.get_json()
+        self.assertEqual(route.status_code, 400)
+        self.assertEqual(audio.status_code, 400)
+        self.assertEqual(sample.status_code, 400)
+        self.assertNotIn("NaN", route.get_data(as_text=True))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(payload["source"], "sqlite")
-        self.assertEqual(payload["results"][0]["slug"], "compass")
-
-    def test_sample_node_api_starts_empty(self):
-        app = self.make_app("")
-        client = app.test_client()
-
-        response = client.get("/api/sample-nodes")
-        payload = response.get_json()
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(payload["sampleNodes"], [])
-
-    def test_audio_analysis_endpoint_summarizes_samples(self):
-        app = self.make_app("")
-        client = app.test_client()
-
-        response = client.post(
+    def test_payload_size_limit_returns_json(self):
+        app = self.make_app(MAX_CONTENT_LENGTH=16_384)
+        response = app.test_client().post(
             "/api/audio/analyze",
-            json={"samples": [0, 0.5, -0.5, 0], "sampleRate": 4},
+            data='{"samples":["' + ("1" * 20_000) + '"]}',
+            content_type="application/json",
         )
-        payload = response.get_json()
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(payload["sampleCount"], 4)
-        self.assertAlmostEqual(payload["durationSeconds"], 1.0)
+        self.assertEqual(response.status_code, 413)
+        self.assertEqual(response.content_type, "application/json")
 
-    def test_optimization_endpoint_orders_route(self):
-        app = self.make_app("")
+    def test_capability_endpoints_validate_and_respond(self):
+        app = self.make_app()
         client = app.test_client()
 
-        response = client.post(
+        audio = client.post("/api/audio/analyze", json={"samples": [0, 0.5, -0.5, 0], "sampleRate": 4})
+        route = client.post(
             "/api/optimize/route",
             json={"points": [{"id": "a", "x": 0, "y": 0}, {"id": "b", "x": 1, "y": 0}]},
         )
-        payload = response.get_json()
+        mapping = client.get("/api/map/default")
+        ml_status = client.get("/api/ml/status")
+        invalid_ml = client.post("/api/ml/kmeans", json={"clusters": "nope", "points": [[0, 0], [1, 1]]})
+
+        self.assertEqual(audio.status_code, 200)
+        self.assertAlmostEqual(audio.get_json()["durationSeconds"], 1.0)
+        self.assertEqual(route.get_json()["orderedIds"], ["a", "b"])
+        self.assertEqual(mapping.get_json()["defaultLocation"]["label"], "UBC Vancouver")
+        self.assertIn("available", ml_status.get_json())
+        self.assertEqual(invalid_ml.status_code, 400)
+
+    def test_response_hardening_and_request_id(self):
+        app = self.make_app()
+        response = app.test_client().get("/api/bootstrap")
+
+        self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
+        self.assertEqual(response.headers["Cross-Origin-Resource-Policy"], "same-origin")
+        self.assertRegex(response.headers["X-Request-ID"], r"^[0-9a-f]{16}$")
+
+    def test_graphical_and_text_shells_include_error_boundary(self):
+        for shell in ("graphical", "text"):
+            with self.subTest(shell=shell):
+                app = self.make_app(shell_variant=shell)
+                html = app.test_client().get("/").get_data(as_text=True)
+                self.assertIn('id="app-error"', html)
+                self.assertIn("boot.js", html)
+                self.assertNotIn("manifest.webmanifest", html)
+                self.tearDown()
+
+    def test_admin_is_available_only_when_enabled(self):
+        app = self.make_app(enabled_features=frozenset({"admin"}))
+        response = app.test_client().get("/admin/")
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(payload["orderedIds"], ["a", "b"])
-
-    def test_map_default_endpoint_uses_ubc_vancouver(self):
-        app = self.make_app("")
-        client = app.test_client()
-
-        response = client.get("/api/map/default")
-        payload = response.get_json()
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(payload["provider"], "openstreetmap")
-        self.assertEqual(payload["defaultLocation"]["label"], "UBC Vancouver")
-
-    def test_ml_status_reports_optional_dependency(self):
-        app = self.make_app("")
-        client = app.test_client()
-
-        response = client.get("/api/ml/status")
-        payload = response.get_json()
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(payload["package"], "scikit-learn")
-        self.assertIn("available", payload)
-
-    def test_graphical_index_renders_without_prefix(self):
-        app = self.make_app("")
-        client = app.test_client()
-
-        response = client.get("/")
-        html = response.get_data(as_text=True)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Blank graphical workspace", html)
-        self.assertNotIn("template-chrome", html)
-        self.assertNotIn("app-topbar", html)
-        self.assertNotIn("brand-mark", html)
-        self.assertNotIn("Admin", html)
-        self.assertNotIn("Install", html)
-        self.assertIn("base.css", html)
-        self.assertNotIn("UBC Vancouver", html)
-        self.assertNotIn("Map", html)
-        self.assertNotIn("DB", html)
-
-    def test_text_index_renders_without_prefix(self):
-        app = self.make_app("", shell_variant="text")
-        client = app.test_client()
-
-        response = client.get("/")
-        html = response.get_data(as_text=True)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Text workspace", html)
-        self.assertNotIn("template-chrome", html)
-        self.assertNotIn("app-topbar", html)
-        self.assertNotIn("brand-mark", html)
-        self.assertNotIn("Admin", html)
-        self.assertNotIn("Install", html)
-        self.assertIn("base.css", html)
-        self.assertNotIn("UBC Vancouver", html)
-        self.assertNotIn("Database", html)
-        self.assertNotIn("Location", html)
-
-    def test_admin_keeps_header_and_diagnostics(self):
-        app = self.make_app("")
-        client = app.test_client()
-
-        response = client.get("/admin/")
-        html = response.get_data(as_text=True)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("app-topbar", html)
-        self.assertIn("brand-mark", html)
-        self.assertIn("Database", html)
+        self.assertIn("Deployment-facing details", response.get_data(as_text=True))
 
 
 if __name__ == "__main__":

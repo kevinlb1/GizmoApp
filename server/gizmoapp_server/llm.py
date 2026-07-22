@@ -1,83 +1,134 @@
-"""Call the course AI model from your GizmoApp.
+"""Small fail-closed helper for the AI100 course model gateway."""
 
-The AI100 platform gives your running app its own AI API key through
-environment variables (separate from the coding agent's key, with its own
-budget, and limited to the course model):
-
-    GIZMO_LLM_API_KEY    your app's API key (set automatically)
-    GIZMO_LLM_BASE_URL   the course AI gateway
-    GIZMO_LLM_MODEL      the model your app may use
-
-Quick start, inside any view or API handler:
-
-    from .llm import ask
-
-    answer = ask("Write a one-line welcome message for a bakery website.")
-
-For multi-turn conversations, build the message list yourself:
-
-    from .llm import chat
-
-    reply = chat([
-        {"role": "system", "content": "You are a helpful cooking assistant."},
-        {"role": "user", "content": "How do I know when bread is done?"},
-    ])
-
-Notes:
-- The course model spends some of its token budget on internal reasoning, so
-  keep ``max_tokens`` generous (the default is fine); very small values can
-  return an empty string.
-- Your app's AI budget is limited. Avoid calling the model in loops or on
-  every page load; call it when the user asks for something.
-"""
+from __future__ import annotations
 
 import os
+from collections.abc import Sequence
+from typing import Any
 
 try:
     from openai import OpenAI
-except ImportError:  # pragma: no cover - dependency missing until pip install
+except ImportError:  # pragma: no cover - dependency missing until installation
     OpenAI = None
 
 DEFAULT_MAX_TOKENS = 1000
+MAX_ALLOWED_TOKENS = 4096
+DEFAULT_TIMEOUT_SECONDS = 30.0
+MAX_TIMEOUT_SECONDS = 55.0
+ALLOWED_ROLES = frozenset({"system", "user", "assistant"})
+
+
+class CourseLLMError(RuntimeError):
+    """A safe, user-displayable course-model failure."""
+
 
 _client = None
+_client_signature: tuple[str, str, float] | None = None
+
+
+def _required_environment(name: str) -> str:
+    value = os.environ.get(name, "").strip()
+    if not value:
+        raise CourseLLMError(
+            f"{name} is not set. The AI100 platform supplies all course-model settings; "
+            "restart the app or server session and try again."
+        )
+    return value
+
+
+def _timeout_seconds() -> float:
+    raw_value = os.environ.get("GIZMO_LLM_TIMEOUT_SECONDS", str(DEFAULT_TIMEOUT_SECONDS))
+    try:
+        value = float(raw_value)
+    except ValueError as exc:
+        raise CourseLLMError("GIZMO_LLM_TIMEOUT_SECONDS must be numeric.") from exc
+    if value <= 0 or value > MAX_TIMEOUT_SECONDS:
+        raise CourseLLMError(
+            f"GIZMO_LLM_TIMEOUT_SECONDS must be greater than zero and at most {MAX_TIMEOUT_SECONDS:g}."
+        )
+    return value
 
 
 def _get_client():
-    global _client
+    global _client, _client_signature
     if OpenAI is None:
-        raise RuntimeError(
-            "The 'openai' package is not installed. "
-            "Run: pip install -r server/requirements.txt"
+        raise CourseLLMError(
+            "The 'openai' package is not installed. Run: pip install -r server/requirements.txt"
         )
-    if not os.environ.get("GIZMO_LLM_API_KEY"):
-        raise RuntimeError(
-            "GIZMO_LLM_API_KEY is not set. On the AI100 platform it is provided "
-            "automatically; try restarting your app (or your server session)."
-        )
-    if _client is None:
+
+    api_key = _required_environment("GIZMO_LLM_API_KEY")
+    base_url = _required_environment("GIZMO_LLM_BASE_URL")
+    timeout = _timeout_seconds()
+    signature = (api_key, base_url, timeout)
+    if _client is None or _client_signature != signature:
         _client = OpenAI(
-            api_key=os.environ["GIZMO_LLM_API_KEY"],
-            base_url=os.environ.get("GIZMO_LLM_BASE_URL") or None,
+            api_key=api_key,
+            base_url=base_url,
+            timeout=timeout,
+            max_retries=1,
         )
+        _client_signature = signature
     return _client
 
 
-def model_name():
-    """The model id your app is allowed to use."""
-    return os.environ.get("GIZMO_LLM_MODEL", "qwen3.6-35b-a3b")
+def model_name() -> str:
+    """Return the model id explicitly assigned by the course platform."""
+    return _required_environment("GIZMO_LLM_MODEL")
 
 
-def chat(messages, max_tokens=DEFAULT_MAX_TOKENS):
-    """Send a chat-style message list; returns the assistant's reply text."""
-    response = _get_client().chat.completions.create(
-        model=model_name(),
-        messages=messages,
-        max_tokens=max_tokens,
-    )
-    return response.choices[0].message.content or ""
+def _validate_max_tokens(max_tokens: int) -> int:
+    if isinstance(max_tokens, bool) or not isinstance(max_tokens, int):
+        raise CourseLLMError("max_tokens must be an integer.")
+    if max_tokens < 1 or max_tokens > MAX_ALLOWED_TOKENS:
+        raise CourseLLMError(f"max_tokens must be between 1 and {MAX_ALLOWED_TOKENS}.")
+    return max_tokens
 
 
-def ask(prompt, max_tokens=DEFAULT_MAX_TOKENS):
-    """One-shot question in, answer text out."""
+def _validate_messages(messages: Sequence[dict[str, Any]]) -> list[dict[str, str]]:
+    if isinstance(messages, (str, bytes)) or not isinstance(messages, Sequence) or not messages:
+        raise CourseLLMError("messages must be a non-empty sequence of message objects.")
+
+    validated: list[dict[str, str]] = []
+    for message in messages:
+        if not isinstance(message, dict):
+            raise CourseLLMError("each message must be an object with role and content strings.")
+        role = message.get("role")
+        content = message.get("content")
+        if role not in ALLOWED_ROLES or not isinstance(content, str) or not content.strip():
+            raise CourseLLMError(
+                "each message must have a system, user, or assistant role and non-empty text content."
+            )
+        validated.append({"role": role, "content": content})
+    return validated
+
+
+def chat(messages: Sequence[dict[str, Any]], max_tokens: int = DEFAULT_MAX_TOKENS) -> str:
+    """Send validated messages and return the assistant's text response."""
+    validated_messages = _validate_messages(messages)
+    validated_max_tokens = _validate_max_tokens(max_tokens)
+    try:
+        response = _get_client().chat.completions.create(
+            model=model_name(),
+            messages=validated_messages,
+            max_tokens=validated_max_tokens,
+        )
+    except CourseLLMError:
+        raise
+    except Exception as exc:
+        raise CourseLLMError(
+            "The course model is temporarily unavailable. Please wait a moment and try again."
+        ) from exc
+
+    if not response.choices:
+        raise CourseLLMError("The course model returned no response. Please try again.")
+    content = response.choices[0].message.content
+    if not isinstance(content, str) or not content.strip():
+        raise CourseLLMError("The course model returned an empty response. Please try again.")
+    return content
+
+
+def ask(prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> str:
+    """Send one user prompt to the course model."""
+    if not isinstance(prompt, str) or not prompt.strip():
+        raise CourseLLMError("prompt must be non-empty text.")
     return chat([{"role": "user", "content": prompt}], max_tokens=max_tokens)
