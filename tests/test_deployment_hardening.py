@@ -29,6 +29,10 @@ class _ReadyHandler(BaseHTTPRequestHandler):
 
 
 class DeploymentHardeningTests(unittest.TestCase):
+    def test_gunicorn_defaults_to_one_sqlite_writer(self):
+        config = (ROOT_DIR / "deploy" / "gunicorn.conf.py").read_text(encoding="utf-8")
+        self.assertIn('workers = env_int("GIZMOAPP_GUNICORN_WORKERS", 1, 1, 16)', config)
+
     def test_shell_scripts_parse(self):
         scripts = [
             "scripts/deploy_from_git.sh",

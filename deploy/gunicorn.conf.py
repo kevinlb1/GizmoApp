@@ -14,7 +14,10 @@ def env_int(name: str, default: int, minimum: int, maximum: int) -> int:
 
 port = env_int("GIZMOAPP_PORT", 8001, 1024, 65535)
 bind = f"127.0.0.1:{port}"
-workers = env_int("GIZMOAPP_GUNICORN_WORKERS", 2, 1, 16)
+# SQLite on the JupyterHub EFS home has one owning application process. An
+# operator may raise this only when the app database has moved to a service or
+# a verified local/block filesystem.
+workers = env_int("GIZMOAPP_GUNICORN_WORKERS", 1, 1, 16)
 threads = env_int("GIZMOAPP_GUNICORN_THREADS", 2, 1, 32)
 timeout = env_int("GIZMOAPP_GUNICORN_TIMEOUT", 60, 5, 300)
 graceful_timeout = 20

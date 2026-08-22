@@ -199,6 +199,12 @@ def load_settings(shell_variant: str | None = None, repo_root: Path | None = Non
     app_environment = environ.get("GIZMOAPP_ENV", "development").strip().lower()
     if app_environment not in {"development", "production", "test"}:
         raise RuntimeError("GIZMOAPP_ENV must be development, production, or test.")
+    sqlite_journal_mode = environ.get("GIZMOAPP_SQLITE_JOURNAL_MODE", "DELETE").strip().upper()
+    if sqlite_journal_mode not in {"DELETE", "TRUNCATE", "PERSIST", "WAL"}:
+        raise RuntimeError("GIZMOAPP_SQLITE_JOURNAL_MODE must be DELETE, TRUNCATE, PERSIST, or WAL.")
+    sqlite_synchronous = environ.get("GIZMOAPP_SQLITE_SYNCHRONOUS", "FULL").strip().upper()
+    if sqlite_synchronous not in {"NORMAL", "FULL", "EXTRA"}:
+        raise RuntimeError("GIZMOAPP_SQLITE_SYNCHRONOUS must be NORMAL, FULL, or EXTRA.")
     secret_key = environ.get("GIZMOAPP_SECRET_KEY", "dev-only-secret")
     if app_environment == "production" and secret_key in {"", "dev-only-secret", "change-me-before-production"}:
         raise RuntimeError("GIZMOAPP_SECRET_KEY must be set to a unique value in production.")
@@ -213,6 +219,8 @@ def load_settings(shell_variant: str | None = None, repo_root: Path | None = Non
         "APP_ENV": app_environment,
         "URL_PREFIX": url_prefix,
         "DB_PATH": db_path,
+        "SQLITE_JOURNAL_MODE": sqlite_journal_mode,
+        "SQLITE_SYNCHRONOUS": sqlite_synchronous,
         "REPO_ROOT": repo_root,
         "STATIC_ROOT": static_dir,
         "SECRET_KEY": secret_key,

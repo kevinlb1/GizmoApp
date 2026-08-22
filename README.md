@@ -83,6 +83,13 @@ ALLOW_SERVER_RUN=1 make dev-text
 
 The development commands now auto-read `deploy/app.env` and then a repo-root `.env`. The default app URL is `http://127.0.0.1:8001/` unless you set `GIZMOAPP_URL_PREFIX`, in which case the app lives under that prefix.
 
+SQLite defaults to rollback journaling (`GIZMOAPP_SQLITE_JOURNAL_MODE=DELETE`) with
+`GIZMOAPP_SQLITE_SYNCHRONOUS=FULL`. This is the required profile for hosted
+CodingWorkspace homes on EFS, where WAL locking is not reliable. The starter
+serializes its built-in writes within the app process, and Gunicorn therefore
+defaults to one worker. Use WAL or multiple workers only with a verified
+local/block filesystem or after moving app state to a database service.
+
 Run the repo-standard validation entry point with:
 
 ```bash

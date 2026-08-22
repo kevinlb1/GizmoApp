@@ -15,7 +15,7 @@ from server.gizmoapp_server.db import (
 
 
 class DatabaseHardeningTests(unittest.TestCase):
-    def test_database_uses_wal_busy_timeout_and_current_schema(self):
+    def test_database_uses_efs_safe_rollback_journal_and_current_schema(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             db_path = Path(temp_dir) / "app.sqlite3"
             config = {"DB_PATH": db_path}
@@ -28,10 +28,25 @@ class DatabaseHardeningTests(unittest.TestCase):
             finally:
                 connection.close()
 
-            self.assertEqual(journal_mode.lower(), "wal")
+            self.assertEqual(journal_mode.lower(), "delete")
             self.assertEqual(version, LATEST_SCHEMA_VERSION)
             verify_database_schema(config)
             self.assertTrue(database_readiness(config)[0])
+
+    def test_database_honors_an_explicit_local_wal_profile(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            db_path = Path(temp_dir) / "app.sqlite3"
+            config = {
+                "DB_PATH": db_path,
+                "SQLITE_JOURNAL_MODE": "WAL",
+                "SQLITE_SYNCHRONOUS": "NORMAL",
+            }
+            initialize_database(config)
+            connection = sqlite3.connect(db_path)
+            try:
+                self.assertEqual(connection.execute("PRAGMA journal_mode").fetchone()[0].lower(), "wal")
+            finally:
+                connection.close()
 
     def test_backup_is_a_consistent_readable_database(self):
         with tempfile.TemporaryDirectory() as temp_dir:

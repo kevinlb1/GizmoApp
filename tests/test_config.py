@@ -132,6 +132,20 @@ class ConfigTestCase(unittest.TestCase):
                 settings = load_settings(repo_root=repo_root)
             self.assertEqual(settings["DB_PATH"], repo_root / "custom" / "data.sqlite3")
 
+    def test_sqlite_profile_defaults_to_efs_safe_values_and_is_validated(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo_root = Path(temp_dir)
+            with patch.dict(os.environ, {}, clear=False):
+                os.environ.pop("GIZMOAPP_SQLITE_JOURNAL_MODE", None)
+                os.environ.pop("GIZMOAPP_SQLITE_SYNCHRONOUS", None)
+                settings = load_settings(repo_root=repo_root)
+            self.assertEqual(settings["SQLITE_JOURNAL_MODE"], "DELETE")
+            self.assertEqual(settings["SQLITE_SYNCHRONOUS"], "FULL")
+
+            with patch.dict(os.environ, {"GIZMOAPP_SQLITE_JOURNAL_MODE": "unsafe"}, clear=False):
+                with self.assertRaisesRegex(RuntimeError, "SQLITE_JOURNAL_MODE"):
+                    load_settings(repo_root=repo_root)
+
     def test_invalid_prefix_and_shell_intent_fail_with_actionable_errors(self):
         with self.assertRaises(RuntimeError):
             normalize_url_prefix("/demo app")
