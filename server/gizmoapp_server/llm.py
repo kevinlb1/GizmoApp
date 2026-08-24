@@ -17,6 +17,12 @@ DEFAULT_TIMEOUT_SECONDS = 30.0
 MAX_TIMEOUT_SECONDS = 55.0
 ALLOWED_ROLES = frozenset({"system", "user", "assistant"})
 NO_THINKING = {"chat_template_kwargs": {"enable_thinking": False}}
+# Tried in order, most specific first, falling back only on a 400.
+NO_THINKING_ATTEMPTS = (
+    {"reasoning_effort": "none", "extra_body": NO_THINKING},
+    {"reasoning_effort": "none"},
+    {},
+)
 
 
 class CourseLLMError(RuntimeError):
@@ -107,17 +113,20 @@ def _create_completion(client: Any, **arguments: Any):
     """Create a completion, asking the model not to think out loud first.
 
     The course model is a reasoning model: left alone it spends the whole
-    max_tokens budget on hidden reasoning and returns empty content. The hint
-    below turns that off, but it is vendor-specific, and a gateway that does
-    not recognise it answers 400. Falling back to a plain request keeps this
-    helper working against any OpenAI-compatible endpoint.
+    max_tokens budget on hidden reasoning and returns empty content, so the
+    hints ask it to answer directly. reasoning_effort is the standard OpenAI
+    parameter; chat_template_kwargs covers vLLM-backed gateways. Gateways
+    reject what they do not recognise with a 400, so drop one hint at a time
+    rather than all of them at once: a gateway that understands only
+    reasoning_effort still gets a usable answer instead of an empty one.
     """
-    try:
-        return client.chat.completions.create(**arguments, extra_body=NO_THINKING)
-    except Exception as exc:
-        if getattr(exc, "status_code", None) != 400:
-            raise
-    return client.chat.completions.create(**arguments)
+    last = len(NO_THINKING_ATTEMPTS) - 1
+    for position, hints in enumerate(NO_THINKING_ATTEMPTS):
+        try:
+            return client.chat.completions.create(**arguments, **hints)
+        except Exception as exc:
+            if position == last or getattr(exc, "status_code", None) != 400:
+                raise
 
 
 def chat(messages: Sequence[dict[str, Any]], max_tokens: int = DEFAULT_MAX_TOKENS) -> str:

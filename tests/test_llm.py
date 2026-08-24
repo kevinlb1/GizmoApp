@@ -44,32 +44,62 @@ class CourseLLMTests(unittest.TestCase):
             model="course-model",
             messages=[{"role": "user", "content": "hello"}],
             max_tokens=100,
+            reasoning_effort="none",
             extra_body={"chat_template_kwargs": {"enable_thinking": False}},
         )
 
-    def test_gateway_rejecting_the_no_thinking_hint_is_retried_without_it(self):
+    def _gateway_rejecting(self, how_many_hints):
+        """A client that answers 400 until the first `how_many_hints` are gone."""
         completion = SimpleNamespace(
             choices=[SimpleNamespace(message=SimpleNamespace(content="Hello"))]
         )
-        rejection = Exception("unknown field chat_template_kwargs")
-        rejection.status_code = 400
+        rejections = []
+        for _ in range(how_many_hints):
+            rejection = Exception("unrecognised request field")
+            rejection.status_code = 400
+            rejections.append(rejection)
         client = Mock()
-        client.chat.completions.create.side_effect = [rejection, completion]
+        client.chat.completions.create.side_effect = [*rejections, completion]
+        return client
+
+    def _ask_through(self, client):
         environment = {
             "GIZMO_LLM_API_KEY": "test-key",
             "GIZMO_LLM_BASE_URL": "https://gateway.example/v1",
             "GIZMO_LLM_MODEL": "course-model",
         }
         with patch.dict(os.environ, environment, clear=True), patch.object(llm, "OpenAI", Mock(return_value=client)):
-            self.assertEqual(llm.ask("hello", max_tokens=100), "Hello")
+            return llm.ask("hello", max_tokens=100)
 
-        plain_call = dict(
+    def test_gateway_rejecting_chat_template_kwargs_keeps_reasoning_effort(self):
+        """One hint is dropped at a time, so a partial gateway still gets a hint."""
+        client = self._gateway_rejecting(1)
+        self.assertEqual(self._ask_through(client), "Hello")
+
+        self.assertEqual(client.chat.completions.create.call_count, 2)
+        client.chat.completions.create.assert_called_with(
+            model="course-model",
+            messages=[{"role": "user", "content": "hello"}],
+            max_tokens=100,
+            reasoning_effort="none",
+        )
+
+    def test_gateway_rejecting_every_hint_falls_back_to_a_plain_request(self):
+        client = self._gateway_rejecting(2)
+        self.assertEqual(self._ask_through(client), "Hello")
+
+        self.assertEqual(client.chat.completions.create.call_count, 3)
+        client.chat.completions.create.assert_called_with(
             model="course-model",
             messages=[{"role": "user", "content": "hello"}],
             max_tokens=100,
         )
-        self.assertEqual(client.chat.completions.create.call_count, 2)
-        client.chat.completions.create.assert_called_with(**plain_call)
+
+    def test_a_plain_request_that_still_fails_is_not_retried_forever(self):
+        client = self._gateway_rejecting(3)
+        with self.assertRaisesRegex(llm.CourseLLMError, "temporarily unavailable"):
+            self._ask_through(client)
+        self.assertEqual(client.chat.completions.create.call_count, 3)
 
     def test_gateway_outage_is_not_retried_without_the_hint(self):
         outage = Exception("service unavailable")

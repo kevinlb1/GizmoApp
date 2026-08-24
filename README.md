@@ -241,9 +241,11 @@ when the user asks for something, not on every page load.
 The course model is a reasoning model: left on, it spends the whole
 `max_tokens` budget on hidden thinking and returns empty `content`, which the
 helper reports as "The course model returned an empty response." `llm.py`
-therefore sends `chat_template_kwargs={"enable_thinking": False}` on every
-call. Turn it back on only for a task that genuinely needs step-by-step
-reasoning, and then raise `max_tokens` to cover the thinking as well.
+therefore sends `reasoning_effort="none"` and, for vLLM-backed gateways,
+`chat_template_kwargs={"enable_thinking": False}` on every call; a gateway
+that understands neither is retried without them. Turn reasoning back on only
+for a task that genuinely needs step-by-step reasoning, and then raise
+`max_tokens` to cover the thinking as well.
 
 Size `max_tokens` to the answer: roomy for prose, tight for short JSON so a
 malformed reply cannot run long. `MAX_ALLOWED_TOKENS` caps requests at 4096, and
