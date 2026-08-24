@@ -115,8 +115,8 @@ def _create_completion(client: Any, **arguments: Any):
     The course model is a reasoning model: left alone it spends the whole
     max_tokens budget on hidden reasoning and returns empty content, so the
     hints ask it to answer directly. reasoning_effort is the standard OpenAI
-    parameter; chat_template_kwargs covers vLLM-backed gateways. Gateways
-    reject what they do not recognise with a 400, so drop one hint at a time
+    parameter; chat_template_kwargs is what some gateways expect instead.
+    Gateways reject what they do not recognise with a 400, so drop one at a time
     rather than all of them at once: a gateway that understands only
     reasoning_effort still gets a usable answer instead of an empty one.
     """
