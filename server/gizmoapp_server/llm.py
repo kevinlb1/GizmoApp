@@ -11,7 +11,7 @@ try:
 except ImportError:  # pragma: no cover - dependency missing until installation
     OpenAI = None
 
-DEFAULT_MAX_TOKENS = 4096
+DEFAULT_MAX_TOKENS = 2048
 MAX_ALLOWED_TOKENS = 4096
 DEFAULT_TIMEOUT_SECONDS = 30.0
 MAX_TIMEOUT_SECONDS = 55.0
