@@ -111,6 +111,7 @@ def chat(messages: Sequence[dict[str, Any]], max_tokens: int = DEFAULT_MAX_TOKEN
             model=model_name(),
             messages=validated_messages,
             max_tokens=validated_max_tokens,
+            extra_body={"chat_template_kwargs": {"enable_thinking": False}},
         )
     except CourseLLMError:
         raise
