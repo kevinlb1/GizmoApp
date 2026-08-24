@@ -233,10 +233,32 @@ def haiku():
 ```
 
 `ask(prompt)` covers one-shot questions; `llm.chat(messages)` takes a full
-message list for conversations. Keep `max_tokens` generous (the default is
-fine) — the course model uses part of its budget for internal reasoning and
-very small limits can produce empty replies. Your app's AI budget is small:
-call the model when the user asks for something, not on every page load.
+message list for conversations. Your app's AI budget is small: call the model
+when the user asks for something, not on every page load.
+
+### Reasoning is turned off
+
+The course model is a reasoning model. Left to its defaults it writes a long
+internal chain of thought into a separate `reasoning_content` field *before*
+the visible answer, so a modest `max_tokens` is spent entirely on hidden
+thinking, the reply is cut off mid-thought, and `content` comes back empty —
+which the helper reports as "The course model returned an empty response."
+
+`llm.py` therefore sends `chat_template_kwargs={"enable_thinking": False}` on
+every call, and the model answers directly. Leave it that way for ordinary
+work.
+
+Turn reasoning back on **only** when a task genuinely needs step-by-step
+deliberation (multi-step math or logic, for example). If you do, drop that
+argument for that call and raise `max_tokens` enough to cover the hidden
+reasoning *and* the visible answer, then confirm a real call still returns
+non-empty content.
+
+Size `max_tokens` to the answer you expect: roomy for prose, tight for short
+structured output such as JSON or a list of tags, so a malformed reply cannot
+run long. `MAX_ALLOWED_TOKENS` caps every request at 4096. A reply that stops
+mid-sentence arrives with `finish_reason: "length"`, which almost always means
+the budget was too small rather than that the model failed.
 
 The helper requires all three settings and fails closed if any are missing. It
 uses a bounded timeout shorter than gunicorn's request timeout, one retry, input

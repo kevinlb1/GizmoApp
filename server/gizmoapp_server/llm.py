@@ -11,7 +11,7 @@ try:
 except ImportError:  # pragma: no cover - dependency missing until installation
     OpenAI = None
 
-DEFAULT_MAX_TOKENS = 1000
+DEFAULT_MAX_TOKENS = 4096
 MAX_ALLOWED_TOKENS = 4096
 DEFAULT_TIMEOUT_SECONDS = 30.0
 MAX_TIMEOUT_SECONDS = 55.0
@@ -111,6 +111,10 @@ def chat(messages: Sequence[dict[str, Any]], max_tokens: int = DEFAULT_MAX_TOKEN
             model=model_name(),
             messages=validated_messages,
             max_tokens=validated_max_tokens,
+            # The course model is a reasoning model. Left on, it spends the whole
+            # max_tokens budget on hidden reasoning and returns empty content.
+            # Remove this only for a task that genuinely needs step-by-step
+            # reasoning, and raise max_tokens to cover the reasoning as well.
             extra_body={"chat_template_kwargs": {"enable_thinking": False}},
         )
     except CourseLLMError:

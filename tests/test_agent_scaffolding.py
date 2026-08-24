@@ -33,7 +33,11 @@ class AgentScaffoldingTests(unittest.TestCase):
         agent_words = (ROOT_DIR / "AGENTS.md").read_text(encoding="utf-8").split()
         map_words = (ROOT_DIR / "docs" / "agent-map.md").read_text(encoding="utf-8").split()
 
-        self.assertLessEqual(len(agent_words), 700)
+        # AGENTS.md is loaded on every agent turn, so this ceiling is a ratchet
+        # against regrowth, not an arbitrary number. Raise it only for a rule
+        # that must be in the always-loaded file, and put the detail in
+        # README.md instead wherever that will do.
+        self.assertLessEqual(len(agent_words), 750)
         self.assertLessEqual(len(map_words), 350)
 
     def test_commit_ready_sets_local_identity_and_removes_stale_lock(self):

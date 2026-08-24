@@ -48,6 +48,10 @@ request.
   `server/gizmoapp_server/llm.py`. The platform supplies the app's separate
   model credentials; never hard-code keys or reuse the coding agent's key.
   Call the model only in response to user actions and surface helper errors.
+  Reasoning is deliberately off in `llm.py`; with it on the model spends the
+  whole `max_tokens` budget thinking and returns nothing. Re-enable it only if a
+  task genuinely needs step-by-step reasoning, and then raise `max_tokens` to
+  cover the thinking as well as the answer. See `README.md`.
 - Media generation: use `server/gizmoapp_server/media.py` only from server
   routes after user actions. Never expose or log `GIZMO_MEDIA_API_KEY`.
 - Audio, search, optimization, maps, and ML: use the matching lazy capability
