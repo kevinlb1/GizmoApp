@@ -16,6 +16,7 @@ MAX_ALLOWED_TOKENS = 4096
 DEFAULT_TIMEOUT_SECONDS = 30.0
 MAX_TIMEOUT_SECONDS = 55.0
 ALLOWED_ROLES = frozenset({"system", "user", "assistant"})
+NO_THINKING = {"chat_template_kwargs": {"enable_thinking": False}}
 
 
 class CourseLLMError(RuntimeError):
@@ -102,20 +103,34 @@ def _validate_messages(messages: Sequence[dict[str, Any]]) -> list[dict[str, str
     return validated
 
 
+def _create_completion(client: Any, **arguments: Any):
+    """Create a completion, asking the model not to think out loud first.
+
+    The course model is a reasoning model: left alone it spends the whole
+    max_tokens budget on hidden reasoning and returns empty content. The hint
+    below turns that off, but it is vendor-specific, and a gateway that does
+    not recognise it answers 400. Falling back to a plain request keeps this
+    helper working against any OpenAI-compatible endpoint.
+    """
+    try:
+        return client.chat.completions.create(**arguments, extra_body=NO_THINKING)
+    except Exception as exc:
+        if getattr(exc, "status_code", None) != 400:
+            raise
+    return client.chat.completions.create(**arguments)
+
+
 def chat(messages: Sequence[dict[str, Any]], max_tokens: int = DEFAULT_MAX_TOKENS) -> str:
     """Send validated messages and return the assistant's text response."""
     validated_messages = _validate_messages(messages)
     validated_max_tokens = _validate_max_tokens(max_tokens)
     try:
-        response = _get_client().chat.completions.create(
+        client = _get_client()
+        response = _create_completion(
+            client,
             model=model_name(),
             messages=validated_messages,
             max_tokens=validated_max_tokens,
-            # The course model is a reasoning model. Left on, it spends the whole
-            # max_tokens budget on hidden reasoning and returns empty content.
-            # Remove this only for a task that genuinely needs step-by-step
-            # reasoning, and raise max_tokens to cover the reasoning as well.
-            extra_body={"chat_template_kwargs": {"enable_thinking": False}},
         )
     except CourseLLMError:
         raise

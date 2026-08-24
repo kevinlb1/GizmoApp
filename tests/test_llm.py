@@ -47,6 +47,46 @@ class CourseLLMTests(unittest.TestCase):
             extra_body={"chat_template_kwargs": {"enable_thinking": False}},
         )
 
+    def test_gateway_rejecting_the_no_thinking_hint_is_retried_without_it(self):
+        completion = SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content="Hello"))]
+        )
+        rejection = Exception("unknown field chat_template_kwargs")
+        rejection.status_code = 400
+        client = Mock()
+        client.chat.completions.create.side_effect = [rejection, completion]
+        environment = {
+            "GIZMO_LLM_API_KEY": "test-key",
+            "GIZMO_LLM_BASE_URL": "https://gateway.example/v1",
+            "GIZMO_LLM_MODEL": "course-model",
+        }
+        with patch.dict(os.environ, environment, clear=True), patch.object(llm, "OpenAI", Mock(return_value=client)):
+            self.assertEqual(llm.ask("hello", max_tokens=100), "Hello")
+
+        plain_call = dict(
+            model="course-model",
+            messages=[{"role": "user", "content": "hello"}],
+            max_tokens=100,
+        )
+        self.assertEqual(client.chat.completions.create.call_count, 2)
+        client.chat.completions.create.assert_called_with(**plain_call)
+
+    def test_gateway_outage_is_not_retried_without_the_hint(self):
+        outage = Exception("service unavailable")
+        outage.status_code = 503
+        client = Mock()
+        client.chat.completions.create.side_effect = outage
+        environment = {
+            "GIZMO_LLM_API_KEY": "test-key",
+            "GIZMO_LLM_BASE_URL": "https://gateway.example/v1",
+            "GIZMO_LLM_MODEL": "course-model",
+        }
+        with patch.dict(os.environ, environment, clear=True), patch.object(llm, "OpenAI", Mock(return_value=client)):
+            with self.assertRaisesRegex(llm.CourseLLMError, "temporarily unavailable"):
+                llm.ask("hello", max_tokens=100)
+
+        self.assertEqual(client.chat.completions.create.call_count, 1)
+
     def test_invalid_prompts_messages_and_token_limits_are_rejected(self):
         for call in (
             lambda: llm.ask(""),
