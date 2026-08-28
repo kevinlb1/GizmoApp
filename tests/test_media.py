@@ -5,6 +5,7 @@ import json
 import os
 import unittest
 from email.message import Message
+from io import BytesIO
 from unittest.mock import patch
 from urllib.error import HTTPError
 
@@ -149,6 +150,28 @@ class CourseMediaTests(unittest.TestCase):
             with self.assertRaisesRegex(media.CourseMediaError, "could not complete") as caught:
                 media.synthesize_speech("Hello")
         self.assertNotIn("secret internal worker path", str(caught.exception))
+
+    def test_safe_platform_error_is_preserved(self):
+        headers = Message()
+        headers["Content-Type"] = "application/json"
+        error = HTTPError(
+            "https://course.example",
+            503,
+            "Service Unavailable",
+            headers,
+            BytesIO(
+                json.dumps(
+                    {"error": "no live course-media worker currently supports this model; please try again shortly"}
+                ).encode()
+            ),
+        )
+        with patch.dict(os.environ, self.environment("audio.speech"), clear=True), patch.object(
+            media,
+            "urlopen",
+            side_effect=error,
+        ):
+            with self.assertRaisesRegex(media.CourseMediaError, "no live course-media worker"):
+                media.synthesize_speech("Hello")
 
     def test_busy_worker_returns_actionable_safe_error(self):
         queued = json.dumps({"id": "media-0123456789abcdef0123", "status": "queued"}).encode()

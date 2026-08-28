@@ -123,10 +123,27 @@ def _post(path: str, payload: dict[str, Any]) -> tuple[int, str, bytes]:
             content_type = str(response.headers.get_content_type()).lower()
             output = response.read(MAX_OUTPUT_BYTES + 1)
     except HTTPError as exc:
+        upstream_message = ""
+        if exc.code in {400, 413, 429, 503}:
+            try:
+                error_body = exc.read(4097)
+                if len(error_body) <= 4096:
+                    error_payload = json.loads(error_body.decode("utf-8"))
+                    candidate = error_payload.get("error") if isinstance(error_payload, dict) else None
+                    if (
+                        isinstance(candidate, str)
+                        and 0 < len(candidate) <= 300
+                        and all(character.isprintable() for character in candidate)
+                    ):
+                        upstream_message = candidate
+            except (AttributeError, OSError, UnicodeDecodeError, json.JSONDecodeError):
+                pass
         if exc.code == 403:
             message = "This app is not allowed to use that course-media operation."
         elif exc.code in {401, 404}:
             message = "The course-media credentials are no longer valid. Restart the app and try again."
+        elif upstream_message:
+            message = upstream_message
         else:
             message = "The course-media service could not complete the request. Please try again."
         raise CourseMediaError(message) from exc
