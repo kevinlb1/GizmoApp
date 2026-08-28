@@ -153,11 +153,13 @@ CodingWorkspace injects `GIZMO_MEDIA_BASE_URL`, `GIZMO_MEDIA_API_KEY`, and
 to one workspace, permits only listed operations, rotates when the preview
 restarts, and is revoked when the preview stops.
 
-The helper validates inputs, bounds output size, uses a timeout shorter than
-the app server timeout, and raises user-displayable `CourseMediaError`
-messages. Requests can take several seconds or report that the GPU worker is
-busy. Trigger them only after a user action, disable duplicate submissions
-while one is running, and let the user retry.
+The helper validates inputs, bounds output size, waits up to five minutes by
+default for worker startup and inference, and raises user-displayable
+`CourseMediaError` messages. The platform keeps the corresponding preview
+route open for up to ten minutes. Requests can still report that no live GPU
+worker is available; surface that message, let the user retry, and do not hide
+it behind a generic network error. Trigger media only after a user action and
+disable duplicate submissions while one is running.
 
 Current helper limits include:
 

@@ -17,8 +17,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
-DEFAULT_TIMEOUT_SECONDS = 50.0
-MAX_TIMEOUT_SECONDS = 55.0
+DEFAULT_TIMEOUT_SECONDS = 300.0
+MAX_TIMEOUT_SECONDS = 600.0
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 MAX_OUTPUT_BYTES = 12 * 1024 * 1024
 MAX_PROMPT_CHARS = 2000

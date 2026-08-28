@@ -107,6 +107,19 @@ class CourseMediaTests(unittest.TestCase):
             with self.assertRaisesRegex(media.CourseMediaError, "not enabled"):
                 media.generate_image("hello")
 
+    def test_media_timeout_allows_bounded_model_startup(self):
+        environment = self.environment("image.generate")
+        environment.pop("GIZMO_MEDIA_TIMEOUT_SECONDS")
+        with patch.dict(os.environ, environment, clear=True):
+            self.assertEqual(300.0, media._timeout_seconds())
+        environment["GIZMO_MEDIA_TIMEOUT_SECONDS"] = "600"
+        with patch.dict(os.environ, environment, clear=True):
+            self.assertEqual(600.0, media._timeout_seconds())
+        environment["GIZMO_MEDIA_TIMEOUT_SECONDS"] = "601"
+        with patch.dict(os.environ, environment, clear=True):
+            with self.assertRaisesRegex(media.CourseMediaError, "at most 600"):
+                media._timeout_seconds()
+
     def test_inputs_and_outputs_are_bounded(self):
         with patch.dict(os.environ, self.environment("image.generate,image.edit"), clear=True):
             with self.assertRaises(media.CourseMediaError):
