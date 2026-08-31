@@ -40,6 +40,14 @@ class AgentScaffoldingTests(unittest.TestCase):
         self.assertLessEqual(len(agent_words), 750)
         self.assertLessEqual(len(map_words), 350)
 
+    def test_checkout_install_uses_image_pip_without_upgrading_it(self):
+        installer = (ROOT_DIR / "scripts" / "install_checkout.sh").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn('"${ROOT_DIR}/.venv/bin/python" -m pip install -r', installer)
+        self.assertNotIn("pip\" install --upgrade pip wheel", installer)
+
     def test_commit_ready_sets_local_identity_and_removes_stale_lock(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = Path(temp_dir)

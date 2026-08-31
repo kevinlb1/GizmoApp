@@ -65,8 +65,10 @@ if [[ ! -x "${ROOT_DIR}/.venv/bin/python" ]]; then
   python3 -m venv "${ROOT_DIR}/.venv"
 fi
 
-"${ROOT_DIR}/.venv/bin/pip" install --upgrade pip wheel
-"${ROOT_DIR}/.venv/bin/pip" install -r "${ROOT_DIR}/server/requirements.txt"
+# Use the pip bundled with the reviewed image/venv. Upgrading installer tools
+# on every checkout adds a separate network round trip and invalidates the
+# image-owned wheelhouse fast path without changing the project's requirements.
+"${ROOT_DIR}/.venv/bin/python" -m pip install -r "${ROOT_DIR}/server/requirements.txt"
 "${ROOT_DIR}/.venv/bin/python" "${ROOT_DIR}/server/manage.py" init-db
 
 describe_args=()
