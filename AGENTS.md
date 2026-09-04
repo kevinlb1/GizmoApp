@@ -24,13 +24,26 @@ for the student's request.
    to `text` or `graphical` in the same commit. Do not edit `.env` or use
    `deploy/app.env` for hosted shell intent.
 4. Keep routes and assets path-prefix-safe. Use the provided base path/client
-   configuration rather than hard-coded `/api` or `/static` URLs.
+   configuration rather than hard-coded `/api` or `/static` URLs. The prefix
+   can change between preview starts on the hosted platform, so never store or
+   hard-code it; read it from the page each time.
 5. Use Flask/SQLite APIs for persistent state. CodingWorkspace previews do not
    guarantee cookies, service workers, localStorage, sessionStorage, IndexedDB,
    same-origin access, or access to the parent page.
-6. Run `make validate`. It performs the repository's Python and JavaScript
+6. Browser-to-server calls: the preview runs in an opaque-origin sandbox. Use
+   plain `fetch()` with relative URLs under the page's `<base href>` (the
+   `requestJson` helper does this) and no `credentials` option. ES module
+   scripts work. Do not add CORS, `Cross-Origin-Resource-Policy`, or preflight
+   handling to the Flask app: the platform's preview proxy already sets those
+   headers, and app-side copies cannot fix a request the platform rejected. If
+   the preview reports "Failed to fetch" while the same route works with
+   `curl`, that is platform routing, not the app; say so and stop rather than
+   adding headers. Forms that submit through JavaScript must call
+   `event.preventDefault()` in a `submit` handler so a slow or failed script
+   does not fall back to a full-page form post.
+7. Run `make validate`. It performs the repository's Python and JavaScript
    checks without Node or automatic dependency installation.
-7. Confirm `git status` or `git log` shows the intended app change. Commit
+8. Confirm `git status` or `git log` shows the intended app change. Commit
    locally when the hosted platform asks; never push from a student workspace.
 
 Public shells should contain only the app the student requested. Do not restore
