@@ -11,9 +11,38 @@ Use this service when an app needs:
 - image-to-image, mask-based, or instruction-based editing; or
 - multilingual Kokoro speech synthesis as WAV audio.
 
-The browser must call a Flask route in the app. Never call the course service
-directly from JavaScript or expose `GIZMO_MEDIA_API_KEY` in HTML, JSON, logs,
-SQLite, or browser storage.
+Coding turns may call the helper directly from Python to create requested assets.
+Browser-driven app features must call a Flask route in the app. Neither path
+may expose `GIZMO_MEDIA_API_KEY` in HTML, JSON, logs, SQLite, or browser storage.
+
+## Generate an Asset During a Coding Turn
+
+A request to generate an asset authorizes doing so now. Use the temporary media
+capability already supplied to the coding process. Do not start the app, add a
+button, wait for a browser action, or require a native image-generation tool.
+The helper itself has no Flask dependency or application-context requirement.
+From the project root:
+
+```bash
+PYTHONPATH=server/gizmoapp_server python3 - <<'PYCODE'
+from pathlib import Path
+from media import generate_image
+
+result = generate_image("A red apple on a plain background", seed=7)
+output = Path("server/gizmoapp_server/static/app/assets/red-apple.png")
+output.parent.mkdir(parents=True, exist_ok=True)
+output.write_bytes(result.data)
+print(f"Saved {output}")
+PYCODE
+```
+
+Use the same direct import for `edit_image` or `synthesize_speech`; save image
+bytes as `.png` and speech bytes as `.wav`. Then wire the saved asset into the
+requested UI using a prefix-aware static URL. Do not overwrite an existing
+user asset without intent. Never print environment variables or save credentials.
+If the capability is absent or expired, report that actual blocker; do not copy
+an app credential from `.env` or borrow another turn's credential. Runtime-only
+instructions refer to interactive app features, not requested coding-turn assets.
 
 ## Available Functions
 
@@ -43,8 +72,8 @@ Read binary output from `result.data` and its MIME type from
 `result.content_type`. Image results can also include `result.job_id` and
 `result.metadata`.
 
-`available_operations()` reports what CodingWorkspace granted to the running
-app. The normal grant is `image.generate`, `image.edit`, and `audio.speech`.
+`available_operations()` reports what CodingWorkspace granted to the current
+coding turn or running app. The normal grant is `image.generate`, `image.edit`, and `audio.speech`.
 Voice cloning is not enabled for student apps.
 
 ## Hosted Model Choices
@@ -149,17 +178,21 @@ returned blob URL on an `<audio>` element. Revoke old object URLs with
 ## Runtime and Safety Notes
 
 CodingWorkspace injects `GIZMO_MEDIA_BASE_URL`, `GIZMO_MEDIA_API_KEY`, and
-`GIZMO_MEDIA_OPERATIONS` only into the app's server process. The token belongs
-to one workspace, permits only listed operations, rotates when the preview
-restarts, and is revoked when the preview stops.
+`GIZMO_MEDIA_OPERATIONS` into an authorized coding process or app server.
+Coding turns receive a separate temporary token bound to their workspace and
+active turn; it stops working when the turn ends and has a bounded request
+allowance. App tokens rotate when the preview restarts and are revoked when it
+stops. Neither token is a central-service or worker credential; both use the
+pod's authenticated local proxy. Never reuse one kind of credential for the other.
 
 The helper validates inputs, bounds output size, waits up to five minutes by
 default for worker startup and inference, and raises user-displayable
 `CourseMediaError` messages. The platform keeps the corresponding preview
 route open for up to ten minutes. Requests can still report that no live GPU
 worker is available; surface that message, let the user retry, and do not hide
-it behind a generic network error. Trigger media only after a user action and
-disable duplicate submissions while one is running.
+it behind a generic network error. For runtime app features, trigger media only
+after an app user action and disable duplicate submissions while one is running.
+For coding-turn assets, the user's generation request is the trigger.
 
 Current helper limits include:
 

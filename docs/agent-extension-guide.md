@@ -62,13 +62,15 @@ debugging, masks, hit areas, or explicitly vector-styled work. For finished
 graphics, prefer sprite sheets, generated bitmap textures, loaded PNG/WebP
 assets, or image-generated sprite bitmaps.
 
-Codex can produce build-time sprite bitmaps when an image-generation tool is
-available. Use that path first for durable art assets and put the results under
-`server/gizmoapp_server/static/app/assets/`. For images generated at app
-runtime after a user action, use `server/gizmoapp_server/media.py` and follow
-`docs/course-media.md`. If neither path is available, say so clearly and build
-an asset slot or simple stylized placeholder instead of faking realism with
-many visible primitive shapes.
+For requested art assets, generate the bitmap during the coding turn and save it
+under `server/gizmoapp_server/static/app/assets/`. CodingWorkspace provides a
+turn-scoped course-media credential: call `server/gizmoapp_server/media.py`
+directly from Python as shown in `docs/course-media.md`. This needs no Flask
+server, browser click, or native image-generation tool. A native tool is another
+option when available. Only build a runtime generation route/button when the
+user requested that interactive feature. If generation is unavailable, report
+the actual helper error; do not claim that a missing native tool prevents use
+of the course helper or silently replace the requested asset with a button.
 
 SVG/vector graphics are best for intentionally stylized icons, diagrams,
 simple characters, and small deformable rigs. They resize cleanly, but

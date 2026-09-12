@@ -3,6 +3,12 @@ from __future__ import annotations
 import base64
 import json
 import os
+import subprocess
+import sys
+import tempfile
+import threading
+from pathlib import Path
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import unittest
 from email.message import Message
 from io import BytesIO
@@ -37,6 +43,59 @@ class CourseMediaTests(unittest.TestCase):
             "GIZMO_MEDIA_OPERATIONS": operations,
             "GIZMO_MEDIA_TIMEOUT_SECONDS": "12",
         }
+
+    def test_coding_command_generates_asset_without_flask_or_running_app(self):
+        png = media.PNG_SIGNATURE + b"synthetic-direct-command"
+        calls = []
+
+        class Gateway(BaseHTTPRequestHandler):
+            def log_message(self, *_args):
+                pass
+
+            def do_POST(self):
+                calls.append((self.path, self.headers.get("Authorization"),
+                              json.loads(self.rfile.read(int(self.headers["Content-Length"])))))
+                body = json.dumps({"data": [{"b64_json": base64.b64encode(png).decode()}]}).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+        gateway = ThreadingHTTPServer(("127.0.0.1", 0), Gateway)
+        thread = threading.Thread(target=gateway.serve_forever, daemon=True)
+        thread.start()
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                environment = dict(os.environ, **self.environment("image.generate"))
+                environment["GIZMO_MEDIA_API_KEY"] = "cwmp_temporary-turn-token"
+                environment["GIZMO_MEDIA_BASE_URL"] = (
+                    f"http://127.0.0.1:{gateway.server_port}/model-proxy/openai/v1"
+                )
+                command = (
+                    "import sys; from pathlib import Path; "
+                    "sys.path.insert(0, sys.argv[1]); from media import generate_image; "
+                    "assert 'flask' not in sys.modules; "
+                    "result = generate_image('A red apple', seed=7); "
+                    "output = Path('assets/red-apple.png'); "
+                    "output.parent.mkdir(); output.write_bytes(result.data); print(output)"
+                )
+                result = subprocess.run(
+                    [sys.executable, "-I", "-c", command, str(Path(media.__file__).parent)],
+                    cwd=tmp, env=environment, capture_output=True, text=True, timeout=15,
+                )
+                self.assertEqual(0, result.returncode, result.stderr)
+                self.assertEqual(png, (Path(tmp) / "assets/red-apple.png").read_bytes())
+                self.assertEqual("assets/red-apple.png", result.stdout.strip())
+                self.assertNotIn(environment["GIZMO_MEDIA_API_KEY"], result.stdout + result.stderr)
+                self.assertEqual(1, len(calls))
+                self.assertEqual("/model-proxy/openai/v1/images/generations", calls[0][0])
+                self.assertEqual("Bearer cwmp_temporary-turn-token", calls[0][1])
+                self.assertEqual("A red apple", calls[0][2]["prompt"])
+        finally:
+            gateway.shutdown()
+            thread.join(timeout=5)
+            gateway.server_close()
 
     def test_generate_image_uses_server_credential_and_returns_png(self):
         png = media.PNG_SIGNATURE + b"prototype"

@@ -1,7 +1,10 @@
 """Fail-closed helpers for CodingWorkspace image and speech services.
 
-Credentials belong to the server process. Browser code should call a Flask
-route which uses these helpers; it must never receive ``GIZMO_MEDIA_API_KEY``.
+Call directly from a coding-turn Python command to create requested assets;
+no Flask import, server, browser action, or application context is required.
+CodingWorkspace supplies a separate temporary credential for the active turn.
+Interactive browser features instead call an app's Flask route using its app
+credential. Browser code must never receive ``GIZMO_MEDIA_API_KEY``.
 """
 
 from __future__ import annotations
@@ -51,7 +54,7 @@ def _required_environment(name: str) -> str:
 
 
 def available_operations() -> frozenset[str]:
-    """Return the operations granted to this app by CodingWorkspace."""
+    """Return the operations granted to this coding turn or app by CodingWorkspace."""
     raw = _required_environment("GIZMO_MEDIA_OPERATIONS")
     return frozenset(item.strip() for item in raw.split(",") if item.strip())
 

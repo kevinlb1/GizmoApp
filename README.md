@@ -299,11 +299,16 @@ model table and language codes in
 speech is WAV audio. These small models run on the course's older Ada cluster,
 so requests can take several seconds and may report that the worker is busy.
 
-Call these functions only from Python routes in
-`server/gizmoapp_server/`. Never put `GIZMO_MEDIA_API_KEY` in HTML, JavaScript,
-JSON responses, logs, or the database. Browser code should call your own Flask
-route, as in the examples above. Generate media only after a user action, and
-catch `CourseMediaError` when the UI needs to show a friendly retry message.
+Coding turns can call these functions directly from Python to produce requested
+assets using their separate temporary turn credential. No running Flask app,
+browser action, or native media tool is needed; follow the direct command in
+[`docs/course-media.md`](docs/course-media.md). Save the result and display the
+asset instead of substituting a generation button for the user's request.
+
+For interactive app features, call the helper from Python routes after the app
+user's action. Never put `GIZMO_MEDIA_API_KEY` in HTML, JavaScript, JSON responses,
+logs, or the database. Browser code calls your Flask route, as in the examples
+above. Catch `CourseMediaError` to show a friendly retry message.
 
 Voice cloning is deliberately not granted to student apps in the initial
 service. It requires separate consent, abuse controls, and a larger model.

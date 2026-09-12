@@ -11,6 +11,7 @@ ordinary app change.
 | Forms, lists, dashboards, text tools, records, workflows | `server/gizmoapp_server/templates/index_text.html`, `server/gizmoapp_server/static/app/text/main.js`, `server/gizmoapp_server/static/app/text/styles.css` |
 | Canvas, animation, games, simulations, sprites, rich visuals | `server/gizmoapp_server/templates/index.html`, `server/gizmoapp_server/static/app/main.js`, `server/gizmoapp_server/static/app/scene.js`, `server/gizmoapp_server/static/app/styles.css` |
 | Shared data, persistence, or API behavior | `server/gizmoapp_server/api.py`, `server/gizmoapp_server/db.py`, `server/gizmoapp_server/views.py` |
+| Preview requests/forms/errors | `docs/preview-requests.md` |
 | Runtime shell choice | `server/gizmoapp_server/shells.py`, `server/wsgi.py`, `deploy/app-shell.txt` |
 
 Set `deploy/app-shell.txt` to `text` or `graphical` when the request clearly

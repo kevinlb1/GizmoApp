@@ -2,10 +2,8 @@
 
 ## Purpose
 
-GizmoApp is the blank Flask/SQLite starter cloned into CodingWorkspace for
-student projects. Keep ordinary app-building turns focused: read this file and
-`docs/agent-map.md`, then open only the files and task-specific guidance needed
-for the student's request.
+GizmoApp is CodingWorkspace's blank Flask/SQLite starter. Read this file and
+`docs/agent-map.md`, then only task-relevant files and guidance.
 
 ## Student Build Loop
 
@@ -30,25 +28,17 @@ for the student's request.
 5. Use Flask/SQLite APIs for persistent state. CodingWorkspace previews do not
    guarantee cookies, service workers, localStorage, sessionStorage, IndexedDB,
    same-origin access, or access to the parent page.
-6. Browser-to-server calls: the preview runs in an opaque-origin sandbox. Use
-   plain `fetch()` with relative URLs under the page's `<base href>` (the
-   `requestJson` helper does this) and no `credentials` option. ES module
-   scripts work. Do not add CORS, `Cross-Origin-Resource-Policy`, or preflight
-   handling to the Flask app: the platform's preview proxy already sets those
-   headers, and app-side copies cannot fix a request the platform rejected. If
-   the preview reports "Failed to fetch" while the same route works with
-   `curl`, that is platform routing, not the app; say so and stop rather than
-   adding headers. Forms that submit through JavaScript must call
-   `event.preventDefault()` in a `submit` handler so a slow or failed script
-   does not fall back to a full-page form post.
+6. Before changing browser requests, read `docs/preview-requests.md`. Use plain
+   relative `fetch()` without credentials; the platform handles CORS. Prevent
+   default form submission. If browser fetch fails while curl succeeds, report
+   the platform routing problem instead of adding app-side headers.
 7. Run `make validate`. It performs the repository's Python and JavaScript
    checks without Node or automatic dependency installation.
 8. Confirm `git status` or `git log` shows the intended app change. Commit
    locally when the hosted platform asks; never push from a student workspace.
 
-Public shells should contain only the app the student requested. Do not restore
-starter Admin/Install/status chrome or demo content unless it is part of the
-request.
+Public shells contain only the requested app; omit starter Admin/Install/status
+chrome and demos unless requested.
 
 ## Task-Specific Rules
 
@@ -61,12 +51,14 @@ request.
   `server/gizmoapp_server/llm.py`. The platform supplies the app's separate
   model credentials; never hard-code keys or reuse the coding agent's key.
   Call the model only in response to user actions and surface helper errors.
-  Reasoning is deliberately off in `llm.py`; with it on the model spends the
-  whole `max_tokens` budget thinking and returns nothing. Re-enable it only if a
-  task genuinely needs step-by-step reasoning, and then raise `max_tokens` to
-  cover the thinking as well as the answer. See `README.md`.
-- Media generation: use `server/gizmoapp_server/media.py` only from server
-  routes after user actions. Never expose or log `GIZMO_MEDIA_API_KEY`.
+  Reasoning defaults off to avoid exhausting `max_tokens` before an answer.
+  Enable only when needed and increase the token budget accordingly; see README.
+- Media: call `server/gizmoapp_server/media.py` directly from Python during the
+  coding turn to create requested assets. Use the inherited turn credential;
+  no Flask server, browser click, or native tool is needed. Follow
+  `docs/course-media.md`; save the asset instead of substituting a button.
+  Interactive app features use server routes after app user actions.
+  Never expose, persist, or log `GIZMO_MEDIA_API_KEY`.
 - Audio, search, optimization, maps, and ML: use the matching lazy capability
   module, add its slug to tracked `deploy/features.txt`, and read only its
   section in `docs/agent-extension-guide.md`. Optional routes are off until
@@ -104,14 +96,8 @@ not a student/template-derived clone:
 - If Git identity or a stale index lock blocks the commit, run
   `make commit-ready`; it configures only this repository and removes only stale
   locks.
-- Update this file when an important workflow, safety, architecture, or
-  operational rule changes. Put detailed deployment procedures in `README.md`
-  or `deploy/`, not in this always-loaded file.
+- Update important rules here; keep detailed procedures in README or `deploy/`.
 
-## Read More Only When Needed
+## Further Reading
 
-- File routing and skip list: `docs/agent-map.md`
-- Feature recipes: `docs/agent-extension-guide.md`
-- Architecture rationale: `docs/design-overview.md`
-- Local setup, AI/media helpers, and deployment: `README.md`
-- Deployment implementation: matching files under `deploy/` and `scripts/`
+Use `docs/agent-map.md` for task-specific guidance, architecture, setup, and deployment.
