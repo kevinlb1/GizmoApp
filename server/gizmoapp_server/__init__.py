@@ -1,23 +1,29 @@
 from __future__ import annotations
 
-from flask import Flask
-from flask.json.provider import DefaultJSONProvider
-from werkzeug.middleware.proxy_fix import ProxyFix
+from typing import TYPE_CHECKING
 
-from .api import register_api_routes
-from .config import load_settings
-from .db import close_db, initialize_database, verify_database_schema
-from .shells import shell_settings
-from .views import register_page_routes
-
-
-class StrictJSONProvider(DefaultJSONProvider):
-    def dumps(self, obj, **kwargs):
-        kwargs.setdefault("allow_nan", False)
-        return super().dumps(obj, **kwargs)
+if TYPE_CHECKING:
+    from flask import Flask
 
 
 def create_app(test_config: dict | None = None, shell_variant: str | None = None) -> Flask:
+    from flask import Flask
+    from flask.json.provider import DefaultJSONProvider
+    from werkzeug.middleware.proxy_fix import ProxyFix
+
+    from .api import register_api_routes
+    from .config import load_settings
+    from .db import close_db, initialize_database, verify_database_schema
+    from .shells import shell_settings
+    from .views import register_page_routes
+
+
+    class StrictJSONProvider(DefaultJSONProvider):
+        def dumps(self, obj, **kwargs):
+            kwargs.setdefault("allow_nan", False)
+            return super().dumps(obj, **kwargs)
+
+
     app = Flask(__name__, template_folder="templates", static_folder=None)
     app.json = StrictJSONProvider(app)
     app.config.update(load_settings(shell_variant=shell_variant))

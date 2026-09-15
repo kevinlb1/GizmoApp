@@ -179,13 +179,15 @@ def generate_image(
     prompt: str,
     *,
     model: str = "stable-diffusion-v1-5",
-    steps: int = 20,
+    steps: int | None = None,
     seed: int | None = None,
 ) -> GeneratedMedia:
     """Generate one 512×512 PNG using a reviewed course GPU model."""
     if model not in {"stable-diffusion-v1-5", "lcm-sd15"}:
         raise CourseMediaError("model must be stable-diffusion-v1-5 or lcm-sd15.")
     _require_operation("image.generate")
+    if steps is None:
+        steps = 8 if model == "lcm-sd15" else 20
     status, content_type, body = _post(
         "images/generations",
         {
@@ -233,12 +235,13 @@ def edit_image(
     """
     _require_operation("image.edit")
     if model not in {
+        "stable-diffusion-v1-5-img2img",
         "stable-diffusion-v1-5",
         "stable-diffusion-v1-5-inpainting",
         "instruct-pix2pix",
     }:
         raise CourseMediaError(
-            "model must be stable-diffusion-v1-5, "
+            "model must be stable-diffusion-v1-5-img2img (or stable-diffusion-v1-5), "
             "stable-diffusion-v1-5-inpainting, or instruct-pix2pix."
         )
     if isinstance(image, Path):

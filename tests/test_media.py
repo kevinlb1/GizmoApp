@@ -44,6 +44,22 @@ class CourseMediaTests(unittest.TestCase):
             "GIZMO_MEDIA_TIMEOUT_SECONDS": "12",
         }
 
+    def test_package_helper_import_needs_no_site_packages(self):
+        result = subprocess.run([sys.executable, "-S", "-c",
+            "import sys; from server.gizmoapp_server import media; assert 'flask' not in sys.modules"],
+            cwd=Path(__file__).resolve().parents[1], capture_output=True, text=True)
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_canonical_img2img_name_and_legacy_alias_both_reach_gateway(self):
+        png = media.PNG_SIGNATURE + b"synthetic"
+        response = {"data": [{"b64_json": base64.b64encode(png).decode()}]}
+        for model in ("stable-diffusion-v1-5-img2img", "stable-diffusion-v1-5"):
+            with patch.dict(os.environ, self.environment("image.edit"), clear=True), patch.object(
+                media, "urlopen", return_value=FakeResponse(json.dumps(response).encode(), "application/json")
+            ) as gateway:
+                media.edit_image("Paint this apple", png, model=model)
+                self.assertEqual(model, json.loads(gateway.call_args.args[0].data)["model"])
+
     def test_coding_command_generates_asset_without_flask_or_running_app(self):
         png = media.PNG_SIGNATURE + b"synthetic-direct-command"
         calls = []

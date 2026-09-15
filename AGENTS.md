@@ -32,8 +32,8 @@ GizmoApp is CodingWorkspace's blank Flask/SQLite starter. Read this file and
    relative `fetch()` without credentials; the platform handles CORS. Prevent
    default form submission. If browser fetch fails while curl succeeds, report
    the platform routing problem instead of adding app-side headers.
-7. Run `make validate`. It performs the repository's Python and JavaScript
-   checks without Node or automatic dependency installation.
+7. Validate with `make validate` or, without make,
+   `bash scripts/run_local_validation.sh` (Python/JS; no dependency installation).
 8. Confirm `git status` or `git log` shows the intended app change. Commit
    locally when the hosted platform asks; never push from a student workspace.
 

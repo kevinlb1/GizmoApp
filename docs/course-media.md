@@ -56,9 +56,9 @@ from .media import (
 ```
 
 - `generate_image(prompt, model="stable-diffusion-v1-5", steps=20, seed=None)`
-  returns `GeneratedMedia`. Select `model="lcm-sd15"` and `steps=4` for a fast
+  returns `GeneratedMedia`. Select `model="lcm-sd15"` and `steps=8` for a fast
   draft.
-- `edit_image(prompt, image, model="stable-diffusion-v1-5", strength=0.6,
+- `edit_image(prompt, image, model="stable-diffusion-v1-5-img2img", strength=0.6,
   steps=20, seed=None)` accepts image
   bytes or a `pathlib.Path` and returns `GeneratedMedia`.
 - `edit_image(..., model="stable-diffusion-v1-5-inpainting", mask=mask_bytes)`
@@ -80,9 +80,9 @@ Voice cloning is not enabled for student apps.
 
 | Task | Model | Guidance |
 | --- | --- | --- |
-| Fast image draft | `lcm-sd15` | Use 4 steps and iterate quickly. |
+| Fast image draft | `lcm-sd15` | Use 8 steps and iterate quickly. |
 | Final image | `stable-diffusion-v1-5` | Use 15–25 steps. |
-| General image variation | `stable-diffusion-v1-5` with `edit_image()` | Adjust `strength` to control how much changes. |
+| General image variation | `stable-diffusion-v1-5-img2img` with `edit_image()` | Adjust `strength` to control how much changes. |
 | Masked replacement | `stable-diffusion-v1-5-inpainting` | Supply a same-subject black/white mask; white is edited. |
 | Instruction edit | `instruct-pix2pix` | Write a direct command such as “make the cat orange.” |
 | Fast expressive speech | `kokoro-82m` | Preferred default. |
@@ -119,7 +119,7 @@ def media_image():
         result = generate_image(
             str(payload.get("prompt", "")),
             model=str(payload.get("model", "lcm-sd15")),
-            steps=int(payload.get("steps", 4)),
+            steps=int(payload.get("steps", 8)),
             seed=payload.get("seed"),
         )
     except CourseMediaError as exc:
