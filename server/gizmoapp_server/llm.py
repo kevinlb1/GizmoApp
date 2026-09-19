@@ -24,9 +24,10 @@ For multi-turn conversations, build the message list yourself:
     ])
 
 Notes:
-- The course model spends some of its token budget on internal reasoning, so
-  keep ``max_tokens`` generous (the default is fine); very small values can
-  return an empty string.
+- A small ``max_tokens`` can make the model return an EMPTY string rather than
+  an error: the request succeeds, but the budget runs out before any visible
+  text is produced. If a call comes back blank, raise ``max_tokens`` before
+  assuming anything is broken.
 - Your app's AI budget is limited. Avoid calling the model in loops or on
   every page load; call it when the user asks for something.
 """
@@ -38,7 +39,10 @@ try:
 except ImportError:  # pragma: no cover - dependency missing until pip install
     OpenAI = None
 
-DEFAULT_MAX_TOKENS = 1000
+# Sized so a normal prompt completes rather than truncating. Measured against
+# the live course model on 2026-09-19: a short story needed 875 completion
+# tokens, and at 1000 an unlucky prompt returns an empty string with no error.
+DEFAULT_MAX_TOKENS = 2000
 
 _client = None
 

@@ -22,8 +22,8 @@ hand:
    which the AI100 platform injects automatically. Do not hardcode API keys,
    do not point the app at any other AI endpoint, and do not reuse the coding
    agent's `OPENAI_API_KEY` inside the student app.
-2. The app's model spends tokens on internal reasoning: keep `max_tokens`
-   generous (default 1000) or replies may come back empty.
+2. Keep `max_tokens` generous (default 2000). Too small a limit makes the
+   model return an empty string with no error, not a truncation warning.
 3. The app key has a small budget. Call the model on user actions, never in
    render loops or on every page load, and surface errors from `llm.py`
    helpers to the page rather than swallowing them.

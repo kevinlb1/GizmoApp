@@ -207,8 +207,9 @@ def haiku():
 
 `ask(prompt)` covers one-shot questions; `llm.chat(messages)` takes a full
 message list for conversations. Keep `max_tokens` generous (the default is
-fine) — the course model uses part of its budget for internal reasoning and
-very small limits can produce empty replies. Your app's AI budget is small:
+fine) — a limit that is too small makes the model return an empty reply rather
+than an error, so raise it before assuming something is broken. Your app's AI
+budget is small:
 call the model when the user asks for something, not on every page load.
 
 Outside the platform (local development) those variables are unset and the
