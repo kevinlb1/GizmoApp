@@ -136,6 +136,16 @@ class CourseMediaTests(unittest.TestCase):
         self.assertEqual("A blue robot", payload["prompt"])
         self.assertEqual(10, payload["wait_seconds"])
 
+    def test_synthesize_speech_requests_and_accepts_mp3(self):
+        mp3 = bytes.fromhex("fff384c4") + bytes(380)
+        with patch.dict(os.environ, self.environment("audio.speech"), clear=True), patch.object(
+            media, "urlopen", return_value=FakeResponse(mp3, "audio/mpeg")
+        ) as send:
+            result = media.synthesize_speech("Hello class")
+        self.assertEqual(result.content_type, "audio/mpeg")
+        self.assertEqual(result.file_extension, ".mp3")
+        self.assertEqual(json.loads(send.call_args.args[0].data)["response_format"], "mp3")
+
     def test_synthesize_speech_returns_wav(self):
         wav = b"RIFF\x04\x00\x00\x00WAVEdata"
         with patch.dict(os.environ, self.environment("audio.speech"), clear=True), patch.object(

@@ -9,7 +9,7 @@ Use this service when an app needs:
 - a generated 512×512 PNG;
 - fast drafts or higher-quality final image generation;
 - image-to-image, mask-based, or instruction-based editing; or
-- multilingual Kokoro speech synthesis as WAV audio.
+- multilingual Kokoro speech synthesis as compressed MP3 audio (WAV remains available).
 
 Coding turns may call the helper directly from Python to create requested assets.
 Browser-driven app features must call a Flask route in the app. Neither path
@@ -37,7 +37,7 @@ PYCODE
 ```
 
 Use the same direct import for `edit_image` or `synthesize_speech`; save image
-bytes as `.png` and speech bytes as `.wav`. Then wire the saved asset into the
+bytes as `.png`; for speech use `result.file_extension` (`.mp3`, or `.wav` on an older server). Then wire the saved asset into the
 requested UI using a prefix-aware static URL. Do not overwrite an existing
 user asset without intent. Never print environment variables or save credentials.
 If the capability is absent or expired, report that actual blocker; do not copy
@@ -209,3 +209,18 @@ generated and show a retryable busy message.
 Outside CodingWorkspace the media environment variables are normally absent,
 so the helper fails closed. Do not commit a real token to make local
 development work.
+
+### Speech delivery format
+
+`synthesize_speech` requests 64 kbps mono MP3 by default. Save the returned
+bytes using `result.file_extension` and serve `result.content_type`; do not
+label MP3 bytes as WAV. Pass `response_format="wav"` when a tool requires PCM.
+Older CW services/workers may return WAV while the rollout is in progress,
+so inspect the actual result rather than assuming the requested format.
+Existing projects need this helper update to opt into compressed delivery.
+
+```python
+result = synthesize_speech("Welcome to the course.")
+path = media_directory / ("welcome" + result.file_extension)
+path.write_bytes(result.data)
+```

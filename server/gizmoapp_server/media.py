@@ -42,6 +42,11 @@ class GeneratedMedia:
     job_id: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
+    @property
+    def file_extension(self) -> str:
+        """Use the actual returned encoding, including an older server's WAV fallback."""
+        return {"image/png": ".png", "audio/wav": ".wav", "audio/mpeg": ".mp3"}[self.content_type]
+
 
 def _required_environment(name: str) -> str:
     value = os.environ.get(name, "").strip()
@@ -117,7 +122,7 @@ def _post(path: str, payload: dict[str, Any]) -> tuple[int, str, bytes]:
         headers={
             "Authorization": f"Bearer {_required_environment('GIZMO_MEDIA_API_KEY')}",
             "Content-Type": "application/json",
-            "Accept": "application/json, image/png, audio/wav",
+            "Accept": "application/json, image/png, audio/wav, audio/mpeg",
         },
     )
     try:
@@ -325,8 +330,11 @@ def synthesize_speech(
     voice: str = "af_heart",
     language: str = "a",
     speed: float = 1.0,
+    response_format: str = "mp3",
 ) -> GeneratedMedia:
-    """Synthesize speech with the hosted Kokoro model."""
+    """Request compact speech; older CW services may return WAV during rollout."""
+    if response_format not in ("mp3", "wav"):
+        raise CourseMediaError("response_format must be mp3 or wav.")
     _require_operation("audio.speech")
     if model != "kokoro-82m":
         raise CourseMediaError("model must be kokoro-82m.")
@@ -345,12 +353,17 @@ def synthesize_speech(
             "voice": voice,
             "language": language,
             "speed": float(speed),
+            "response_format": response_format,
             "wait": True,
             "wait_seconds": int(_timeout_seconds()) - 2,
         },
     )
     if status == 202:
         _json_result(status, content_type, body)
+    if content_type == "audio/mpeg" and response_format == "mp3":
+        if len(body) < 8 or len(body) > MAX_OUTPUT_BYTES or body[:2] != b"\xff\xf3":
+            raise CourseMediaError("The course-media service returned invalid audio.")
+        return GeneratedMedia(data=body, content_type="audio/mpeg")
     if content_type not in {"audio/wav", "audio/x-wav", "audio/wave"}:
         raise CourseMediaError("The course-media service returned invalid audio.")
     if len(body) < 12 or body[:4] != b"RIFF" or body[8:12] != b"WAVE":
