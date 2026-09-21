@@ -32,6 +32,17 @@ PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 class CourseMediaError(RuntimeError):
     """A safe, user-displayable course-media failure."""
 
+    def __init__(self, message, *, status=400):
+        super().__init__(message)
+        self.status = status
+
+
+@dataclass(frozen=True)
+class PendingMedia:
+    """Opaque progress receipt; never contains the media API credential."""
+    poll_ticket: str
+    status: str
+
 
 @dataclass(frozen=True)
 class GeneratedMedia:
@@ -126,7 +137,7 @@ def _post(path: str, payload: dict[str, Any]) -> tuple[int, str, bytes]:
         },
     )
     try:
-        with urlopen(request, timeout=_timeout_seconds()) as response:
+        with urlopen(request, timeout=min(30, _timeout_seconds()) if payload.get("wait") is False or path == "media/jobs/poll" else _timeout_seconds()) as response:
             status = int(getattr(response, "status", 200))
             content_type = str(response.headers.get_content_type()).lower()
             output = response.read(MAX_OUTPUT_BYTES + 1)
@@ -154,10 +165,10 @@ def _post(path: str, payload: dict[str, Any]) -> tuple[int, str, bytes]:
             message = upstream_message
         else:
             message = "The course-media service could not complete the request. Please try again."
-        raise CourseMediaError(message) from exc
+        raise CourseMediaError(message, status=exc.code) from exc
     except (URLError, TimeoutError, OSError) as exc:
         raise CourseMediaError(
-            "The course-media service is temporarily unavailable. Please try again."
+            "The course-media service is temporarily unavailable. Please try again.", status=503
         ) from exc
     if len(output) > MAX_OUTPUT_BYTES:
         raise CourseMediaError("The course-media service returned an unexpectedly large result.")
@@ -186,7 +197,8 @@ def generate_image(
     model: str = "stable-diffusion-v1-5",
     steps: int | None = None,
     seed: int | None = None,
-) -> GeneratedMedia:
+    wait: bool = True,
+) -> GeneratedMedia | PendingMedia:
     """Generate one 512×512 PNG using a reviewed course GPU model."""
     if model not in {"stable-diffusion-v1-5", "lcm-sd15"}:
         raise CourseMediaError("model must be stable-diffusion-v1-5 or lcm-sd15.")
@@ -201,24 +213,11 @@ def generate_image(
             "size": "512x512",
             "steps": _validate_steps(steps),
             "seed": _validate_seed(seed),
-            "wait": True,
+            "wait": wait,
             "wait_seconds": int(_timeout_seconds()) - 2,
         },
     )
-    result = _json_result(status, content_type, body)
-    try:
-        image_data = base64.b64decode(result["data"][0]["b64_json"], validate=True)
-    except (KeyError, IndexError, TypeError, ValueError, binascii.Error) as exc:
-        raise CourseMediaError("The course-media service returned an invalid image.") from exc
-    if len(image_data) > MAX_OUTPUT_BYTES or not image_data.startswith(PNG_SIGNATURE):
-        raise CourseMediaError("The course-media service returned an invalid image.")
-    metadata = result.get("metadata")
-    return GeneratedMedia(
-        data=image_data,
-        content_type="image/png",
-        job_id=str(result["jobId"]) if result.get("jobId") else None,
-        metadata=metadata if isinstance(metadata, dict) else {},
-    )
+    return _decode_result(status, content_type, body, allow_pending=not wait, expected="image")
 
 
 def edit_image(
@@ -231,7 +230,8 @@ def edit_image(
     strength: float = 0.6,
     steps: int = 20,
     seed: int | None = None,
-) -> GeneratedMedia:
+    wait: bool = True,
+) -> GeneratedMedia | PendingMedia:
     """Edit a source image and return one 512×512 PNG.
 
     Select ``stable-diffusion-v1-5-inpainting`` and supply a black/white mask
@@ -303,24 +303,11 @@ def edit_image(
             "image_guidance_scale": image_guidance_value,
             "steps": _validate_steps(steps),
             "seed": _validate_seed(seed),
-            "wait": True,
+            "wait": wait,
             "wait_seconds": int(_timeout_seconds()) - 2,
         },
     )
-    result = _json_result(status, content_type, body)
-    try:
-        edited_data = base64.b64decode(result["data"][0]["b64_json"], validate=True)
-    except (KeyError, IndexError, TypeError, ValueError, binascii.Error) as exc:
-        raise CourseMediaError("The course-media service returned an invalid image.") from exc
-    if len(edited_data) > MAX_OUTPUT_BYTES or not edited_data.startswith(PNG_SIGNATURE):
-        raise CourseMediaError("The course-media service returned an invalid image.")
-    metadata = result.get("metadata")
-    return GeneratedMedia(
-        data=edited_data,
-        content_type="image/png",
-        job_id=str(result["jobId"]) if result.get("jobId") else None,
-        metadata=metadata if isinstance(metadata, dict) else {},
-    )
+    return _decode_result(status, content_type, body, allow_pending=not wait, expected="image")
 
 
 def synthesize_speech(
@@ -331,7 +318,8 @@ def synthesize_speech(
     language: str = "a",
     speed: float = 1.0,
     response_format: str = "mp3",
-) -> GeneratedMedia:
+    wait: bool = True,
+) -> GeneratedMedia | PendingMedia:
     """Request compact speech; older CW services may return WAV during rollout."""
     if response_format not in ("mp3", "wav"):
         raise CourseMediaError("response_format must be mp3 or wav.")
@@ -354,18 +342,49 @@ def synthesize_speech(
             "language": language,
             "speed": float(speed),
             "response_format": response_format,
-            "wait": True,
+            "wait": wait,
             "wait_seconds": int(_timeout_seconds()) - 2,
         },
     )
+    return _decode_result(status, content_type, body, allow_pending=not wait, expected="audio")
+
+
+def poll_media(pending: PendingMedia) -> GeneratedMedia | PendingMedia:
+    """Read an existing job once; no new generation, sleep, or cancellation."""
+    if not isinstance(pending, PendingMedia) or not 1 <= len(pending.poll_ticket) <= 2048:
+        raise CourseMediaError("Invalid media progress receipt.")
+    return _decode_result(*_post("media/jobs/poll", {"pollTicket": pending.poll_ticket}))
+
+
+def _decode_result(status, content_type, body, *, allow_pending=True, expected=None):
     if status == 202:
-        _json_result(status, content_type, body)
-    if content_type == "audio/mpeg" and response_format == "mp3":
+        if not allow_pending:
+            _json_result(status, content_type, body)
+        result = _json_result(200, content_type, body)
+        ticket = result.get("pollTicket")
+        if not isinstance(ticket, str) or not 1 <= len(ticket) <= 2048:
+            raise CourseMediaError("This CW version does not support media polling. Update CW and try again.")
+        return PendingMedia(ticket, str(result.get("status", "queued")))
+    if expected == "image" and content_type != "application/json":
+        raise CourseMediaError("The course-media service returned an invalid image.")
+    if expected == "audio" and content_type == "application/json":
+        raise CourseMediaError("The course-media service returned invalid audio.")
+    if content_type == "application/json":
+        result = _json_result(status, content_type, body)
+        try:
+            data = base64.b64decode(result["data"][0]["b64_json"], validate=True)
+        except (KeyError, IndexError, TypeError, ValueError, binascii.Error) as exc:
+            raise CourseMediaError("The course-media service returned an invalid image.") from exc
+        if len(data) > MAX_OUTPUT_BYTES or not data.startswith(PNG_SIGNATURE):
+            raise CourseMediaError("The course-media service returned an invalid image.")
+        return GeneratedMedia(data, "image/png", str(result["jobId"]) if result.get("jobId") else None,
+                              result.get("metadata") if isinstance(result.get("metadata"), dict) else {})
+    if content_type == "audio/mpeg":
         if len(body) < 8 or len(body) > MAX_OUTPUT_BYTES or body[:2] != b"\xff\xf3":
             raise CourseMediaError("The course-media service returned invalid audio.")
-        return GeneratedMedia(data=body, content_type="audio/mpeg")
+        return GeneratedMedia(body, "audio/mpeg")
     if content_type not in {"audio/wav", "audio/x-wav", "audio/wave"}:
         raise CourseMediaError("The course-media service returned invalid audio.")
     if len(body) < 12 or body[:4] != b"RIFF" or body[8:12] != b"WAVE":
         raise CourseMediaError("The course-media service returned invalid audio.")
-    return GeneratedMedia(data=body, content_type="audio/wav")
+    return GeneratedMedia(body, "audio/wav")

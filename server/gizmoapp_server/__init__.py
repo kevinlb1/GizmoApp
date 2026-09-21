@@ -42,6 +42,8 @@ def create_app(test_config: dict | None = None, shell_variant: str | None = None
         verify_database_schema(app.config)
     app.teardown_appcontext(close_db)
 
+    from .media_routes import register_media_routes
+    register_media_routes(app)
     register_api_routes(app)
     register_page_routes(app)
     return app

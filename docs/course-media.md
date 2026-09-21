@@ -97,83 +97,65 @@ ${GIZMO_MEDIA_BASE_URL}/models` provides the current machine-readable catalog.
 Application browser code must not call it directly because the bearer token is
 server-only.
 
-## Add Prefix-Aware Flask Routes
+## Interactive browser media: submit and poll
 
-Add routes inside `register_api_routes()` in
-`server/gizmoapp_server/api.py`, before its catch-all unknown API route. Reuse
-the existing `prefix` variable and `scoped_path()` so the app continues to work
-under its CodingWorkspace URL prefix.
-
-```python
-from flask import Response, jsonify, request
-
-from .media import CourseMediaError, generate_image, synthesize_speech
-
-
-@app.post(scoped_path(prefix, "api/media/image"))
-def media_image():
-    payload, error = _json_object()
-    if error:
-        return error
-    try:
-        result = generate_image(
-            str(payload.get("prompt", "")),
-            model=str(payload.get("model", "lcm-sd15")),
-            steps=int(payload.get("steps", 8)),
-            seed=payload.get("seed"),
-        )
-    except CourseMediaError as exc:
-        return jsonify({"errors": [str(exc)]}), 503
-    return Response(result.data, mimetype=result.content_type)
-
-
-@app.post(scoped_path(prefix, "api/media/speech"))
-def media_speech():
-    payload, error = _json_object()
-    if error:
-        return error
-    try:
-        result = synthesize_speech(
-            str(payload.get("text", "")),
-            model=str(payload.get("model", "kokoro-82m")),
-            voice=str(payload.get("voice", "af_heart")),
-            language=str(payload.get("language", "a")),
-        )
-    except CourseMediaError as exc:
-        return jsonify({"errors": [str(exc)]}), 503
-    return Response(result.data, mimetype=result.content_type)
-```
-
-For production-facing apps, distinguish invalid user input with a 400 response
-before calling the helper. The compact example returns all safe helper failures
-as 503 so the browser can offer a retry.
-
-No `deploy/features.txt` entry is required for these custom routes. That file
-controls GizmoApp's optional built-in capability routes, not the
-CodingWorkspace media credential.
-
-## Call the App Route from JavaScript
-
-Use the injected `apiBase`; do not hard-code `/api`:
+Use the built-in prefix-aware `api/course-media/image`, `speech`, and `poll`
+routes and `app/course-media.js`. They require the new matching CW polling
+endpoint. Each route responds promptly with progress or a finished asset;
+no browser request waits through model startup or the whole narration.
+The platform retains the job centrally and signs a short-lived progress receipt
+bound to this workspace and app credential. No secret enters JavaScript.
 
 ```javascript
-const response = await fetch(`${config.apiBase}/media/image`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ prompt: "A friendly robot teaching an AI class" }),
+const {generateMedia, narrate} = await import(
+  new URL("app/course-media.js", document.baseURI)
+);
+// Run inside a click/submit handler; disable the button until it finishes.
+const image = await generateMedia(config.apiBase, "image", {
+  prompt: "A friendly robot teaching an AI class"
+}, {onProgress: status => { statusElement.textContent = status; }});
+imageElement.src = URL.createObjectURL(image);
+
+// Each chunk becomes playable as soon as it is ready. Your callback should
+// enqueue a chunk in the audio player, not wait for the entire narration.
+await narrate(config.apiBase, narrationText, {
+  voice: "af_heart",
+  onProgress: ({status, index, total}) => {
+    statusElement.textContent = `${status}: ${index + 1} / ${total}`;
+  },
+  onChunk: blob => audioQueue.push(URL.createObjectURL(blob)),
 });
-
-if (!response.ok) {
-  throw new Error("Image generation is temporarily unavailable.");
-}
-
-const imageUrl = URL.createObjectURL(await response.blob());
-imageElement.src = imageUrl;
 ```
 
-Speech uses the same pattern with `${config.apiBase}/media/speech`. Set the
-returned blob URL on an `<audio>` element. Revoke old object URLs with
-`URL.revokeObjectURL()` when replacing or removing generated media.
+Implement the audio queue with an `<audio controls>` player: set its source to
+chunk one immediately; advance to the next ready chunk on `ended`. If playback
+catches up with generation, resume when another chunk arrives. Browsers may
+require the user to press Play; catch rejected `play()` promises. Revoke object
+URLs after playback/removal. Never concatenate WAV headers or MP3 containers.
+The callback can instead save or display individual clips.
+
+`generateMedia` polls every two seconds, tolerates transient polling outages,
+and waits up to ten minutes per chunk (including cold startup). It never
+retries a submission after an ambiguous response. Narration is bounded to
+16,000 characters, split at whitespace into chunks of at most 500 characters,
+with only one generation outstanding. Pass an AbortSignal to stop further
+polling/chunks; an already submitted job may finish, but no new job is created.
+Receipts expire after 15 minutes or a CW process restart. App restart/token
+rotation invalidates access. A lost receipt is not recovered by resubmitting.
+
+Python callers can use `generate_image(..., wait=False)`,
+`edit_image(..., wait=False)`, or `synthesize_speech(..., wait=False)` and
+`poll_media(PendingMedia)` to build custom routes. Each returns either
+`PendingMedia` or `GeneratedMedia`; never send the API key to the browser.
+Coding-turn asset generation keeps the synchronous default.
+
+Existing projects are not rewritten. To adopt this in an existing app, update
+`media.py`, add `media_routes.py` and `static/app/course-media.js`, register
+`register_media_routes(app)` in its factory, and switch its media UI to the
+helpers above. Preserve project-specific routes and content. Do not simply
+increase its old 50-second fetch timeout: the outer load balancer can still
+close a long idle request. Roll out CW polling support before enabling the
+new app routes; an older CW image cannot serve this protocol.
 
 ## Runtime and Safety Notes
 
@@ -187,8 +169,8 @@ pod's authenticated local proxy. Never reuse one kind of credential for the othe
 
 The helper validates inputs, bounds output size, waits up to five minutes by
 default for worker startup and inference, and raises user-displayable
-`CourseMediaError` messages. The platform keeps the corresponding preview
-route open for up to ten minutes. Requests can still report that no live GPU
+`CourseMediaError` messages. Interactive browser features must use the polling routes above; an outer
+load balancer can close a long idle response even when the pod keeps it open. Requests can still report that no live GPU
 worker is available; surface that message, let the user retry, and do not hide
 it behind a generic network error. For runtime app features, trigger media only
 after an app user action and disable duplicate submissions while one is running.

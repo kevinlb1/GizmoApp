@@ -57,7 +57,7 @@ chrome and demos unless requested.
   coding turn to create requested assets. Use the inherited turn credential;
   no Flask server, browser click, or native tool is needed. Follow
   `docs/course-media.md`; save the asset instead of substituting a button.
-  Interactive app features use server routes after app user actions.
+  Interactive apps use polling and progressive narration; follow `docs/course-media.md`.
   Never expose, persist, or log `GIZMO_MEDIA_API_KEY`.
 - Audio, search, optimization, maps, and ML: use the matching lazy capability
   module, add its slug to tracked `deploy/features.txt`, and read only its
