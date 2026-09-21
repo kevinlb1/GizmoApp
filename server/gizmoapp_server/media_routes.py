@@ -16,6 +16,8 @@ def register_media_routes(app):
             return jsonify(errors=["Expected a JSON object."]), 400
         try:
             if operation == "image":
+                if not isinstance(payload.get("model", "lcm-sd15"), str):
+                    return jsonify(errors=["model must be a string."]), 400
                 result = generate_image(payload.get("prompt", ""),
                     model=payload.get("model", "lcm-sd15"), wait=False)
             elif operation == "speech":

@@ -351,7 +351,8 @@ def synthesize_speech(
 
 def poll_media(pending: PendingMedia) -> GeneratedMedia | PendingMedia:
     """Read an existing job once; no new generation, sleep, or cancellation."""
-    if not isinstance(pending, PendingMedia) or not 1 <= len(pending.poll_ticket) <= 2048:
+    if (not isinstance(pending, PendingMedia) or not isinstance(pending.poll_ticket, str)
+            or not 1 <= len(pending.poll_ticket) <= 2048):
         raise CourseMediaError("Invalid media progress receipt.")
     return _decode_result(*_post("media/jobs/poll", {"pollTicket": pending.poll_ticket}))
 

@@ -48,3 +48,12 @@ class PollingTests(unittest.TestCase):
             with patch('server.gizmoapp_server.media_routes.poll_media', side_effect=media.CourseMediaError('safe error', status=status)):
                 response = app.test_client().post('/api/course-media/poll', json={'pollTicket': 'ticket'})
             self.assertEqual(status, response.status_code)
+
+    def test_malformed_browser_values_fail_without_contacting_gateway(self):
+        app = Flask(__name__); app.config['URL_PREFIX'] = ''
+        register_media_routes(app)
+        with patch.object(media, 'urlopen') as gateway:
+            for operation, payload in [('poll', {'pollTicket': None}), ('poll', {'pollTicket': []}), ('image', {'model': []})]:
+                response = app.test_client().post('/api/course-media/' + operation, json=payload)
+                self.assertEqual(400, response.status_code)
+            gateway.assert_not_called()
