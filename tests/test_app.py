@@ -55,6 +55,23 @@ class GizmoAppTestCase(unittest.TestCase):
         self.assertEqual(ready.get_json()["status"], "ready")
         self.assertEqual(ready.get_json()["schemaVersion"], 2)
 
+    def test_shared_preview_uses_each_members_trusted_mount(self):
+        app = self.make_app(TRUST_PROXY=True)
+        for prefix in ("/user/alice/cw/group-preview/team", "/user/bob/cw/group-preview/team", ""):
+            page = app.test_client().get("/", headers={"X-Forwarded-Prefix": prefix}).get_data(as_text=True)
+            self.assertIn(f'<base href="{prefix}/">', page)
+            self.assertIn(f'{prefix}/app/', page)
+            self.assertIn(f'{prefix}/api', page)
+        self.assertEqual(app.config["URL_PREFIX"], "")
+
+    def test_shared_preview_header_cannot_override_untrusted_or_fixed_prefix(self):
+        app = self.make_app(TRUST_PROXY=False)
+        page = app.test_client().get("/", headers={"X-Forwarded-Prefix":"/untrusted"}).get_data(as_text=True)
+        self.assertNotIn('/untrusted', page)
+        app.config["URL_PREFIX"] = "/fixed"
+        page = app.test_client().get("/", headers={"X-Forwarded-Prefix":"/other"}).get_data(as_text=True)
+        self.assertIn('<base href="/fixed/">', page)
+
     def test_optional_routes_are_disabled_by_default(self):
         app = self.make_app(enabled_features=frozenset())
         client = app.test_client()
