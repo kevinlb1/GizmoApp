@@ -68,7 +68,18 @@ fi
 # Use the pip bundled with the reviewed image/venv. Upgrading installer tools
 # on every checkout adds a separate network round trip and invalidates the
 # image-owned wheelhouse fast path without changing the project's requirements.
-"${ROOT_DIR}/.venv/bin/python" -m pip install -r "${ROOT_DIR}/server/requirements.txt"
+# CodingWorkspace selects this only after binding the exact dependency inputs
+# to its verified, image-owned read-only environment. Local/custom checkouts
+# retain the ordinary installer. Never try to update packages in the shared env.
+if [[ "${CODINGWORKSPACE_PREINSTALLED_DEPENDENCIES:-0}" == "1" ]]; then
+  if [[ ! -L "${ROOT_DIR}/.venv" || -w "${ROOT_DIR}/.venv" ]]; then
+    echo "Preinstalled dependencies require a read-only managed virtualenv." >&2
+    exit 1
+  fi
+  echo "Using versioned image dependencies."
+else
+  "${ROOT_DIR}/.venv/bin/python" -m pip install -r "${ROOT_DIR}/server/requirements.txt"
+fi
 "${ROOT_DIR}/.venv/bin/python" "${ROOT_DIR}/server/manage.py" init-db
 
 describe_args=()
