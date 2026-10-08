@@ -45,7 +45,8 @@ class AgentScaffoldingTests(unittest.TestCase):
             encoding="utf-8"
         )
 
-        self.assertIn('"${ROOT_DIR}/.venv/bin/python" -m pip install -r', installer)
+        self.assertIn('dependency_python="${ROOT_DIR}/.venv/bin/python"', installer)
+        self.assertIn('"${dependency_python}" -m pip install -r', installer)
         self.assertNotIn("pip\" install --upgrade pip wheel", installer)
 
     def test_commit_ready_sets_local_identity_and_removes_stale_lock(self):
