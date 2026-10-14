@@ -175,14 +175,23 @@ only when they give no different location.
 
 ## Machine Learning
 
-Use scikit-learn when the user requests ML. Keep it optional:
+When a derived app needs ML, declare a tested, pinned `scikit-learn` version
+directly in that app's `server/requirements.txt`. Python imports the package as
+`sklearn`. The hosted platform installs the tracked requirements when preparing
+or rebuilding the app; this makes the dependency survive image upgrades.
+Keep optional imports lazy so an unavailable optional feature does not prevent
+the rest of the app from starting. Validate after preparing the new dependencies.
+
+The canonical blank starter keeps scikit-learn out of its base requirements.
+For temporary local experiments in a writable virtual environment, use:
 
 ```bash
 ALLOW_NETWORK_INSTALL=1 make install-ml
 ```
 
-Do not add scikit-learn to `server/requirements.txt` unless ML becomes mandatory
-for the base template.
+`make install-ml` and one-off `pip install` commands only modify the current
+environment. They do not declare a persistent dependency for a hosted derived
+app and must not replace its tracked `server/requirements.txt` entry.
 
 Enable the status and KMeans routes with `machine-learning` in
 `deploy/features.txt`.

@@ -63,9 +63,13 @@ chrome and demos unless requested.
   module, add its slug to tracked `deploy/features.txt`, and read only its
   section in `docs/agent-extension-guide.md`. Optional routes are off until
   that tracked intent enables them.
-- New Python dependency: add it to `server/requirements.txt`. Keep optional ML
-  dependencies in `server/requirements-ml.txt`, pin direct runtime versions,
-  and validate the upgrade deliberately.
+- New Python dependency: declare each required runtime package directly in
+  `server/requirements.txt` with a tested version pin. For a derived app that
+  needs ML, this includes `scikit-learn` (imported as `sklearn`). Hosted rebuilds
+  install that file; a one-off `make install-ml` or `pip install` does not
+  persist the dependency across image upgrades. Keep ML out of the canonical
+  blank starter's base requirements; `server/requirements-ml.txt` remains an
+  optional local experiment. Keep optional imports lazy and validate the change.
 
 ## Validation And Safety
 

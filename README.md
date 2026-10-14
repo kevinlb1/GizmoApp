@@ -108,11 +108,24 @@ Before a local source-repo commit, this helper can set a repo-local Git identity
 make commit-ready
 ```
 
-Machine-learning features should install the optional scikit-learn dependency only when an app actually needs ML:
+For a derived app that needs machine learning, add the tested, pinned
+`scikit-learn` package directly to that app's `server/requirements.txt`
+(Python imports it as `sklearn`). CodingWorkspace installs these tracked
+requirements when preparing the app, including after an image upgrade. Keep
+imports lazy when the feature is optional, and validate the app after preparing
+its updated dependencies. The canonical blank starter keeps ML out of its base
+requirements so apps that do not use it stay small.
+
+For a temporary local experiment in a writable virtual environment, the optional
+helper is available:
 
 ```bash
 ALLOW_NETWORK_INSTALL=1 make install-ml
 ```
+
+This helper installs only into the current environment; it does not record a
+hosted app dependency. Do not rely on it or on a one-off `pip install` for an
+app that must keep working after a hosted rebuild.
 
 ## Visual Verification
 
