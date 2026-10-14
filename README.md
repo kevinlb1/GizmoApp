@@ -236,6 +236,12 @@ def haiku():
 message list for conversations. Your app's AI budget is small: call the model
 when the user asks for something, not on every page load.
 
+For photo understanding use `ask_image(prompt, uploaded_bytes, mime_type="image/jpeg")`.
+The helper sends the actual photo to the assigned course model; no public image
+hosting or personal key is needed. See [course vision](docs/course-vision.md)
+for upload handling and the required CodingWorkspace photo-input fix. Newcastle
+generation/editing/speech use the separate, uncharged media service.
+
 ### Reasoning is turned off
 
 The course model is a reasoning model: left on, it spends the whole

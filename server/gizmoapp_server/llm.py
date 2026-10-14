@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import base64
 from collections.abc import Sequence
 from typing import Any
 
@@ -91,20 +92,40 @@ def _validate_max_tokens(max_tokens: int) -> int:
     return max_tokens
 
 
-def _validate_messages(messages: Sequence[dict[str, Any]]) -> list[dict[str, str]]:
+def _validate_messages(messages: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
     if isinstance(messages, (str, bytes)) or not isinstance(messages, Sequence) or not messages:
         raise CourseLLMError("messages must be a non-empty sequence of message objects.")
 
-    validated: list[dict[str, str]] = []
+    validated: list[dict[str, Any]] = []
     for message in messages:
         if not isinstance(message, dict):
             raise CourseLLMError("each message must be an object with role and content strings.")
         role = message.get("role")
         content = message.get("content")
-        if role not in ALLOWED_ROLES or not isinstance(content, str) or not content.strip():
+        if not isinstance(role, str) or role not in ALLOWED_ROLES:
             raise CourseLLMError(
                 "each message must have a system, user, or assistant role and non-empty text content."
             )
+        if isinstance(content, list) and content and role == "user":
+            parts = []
+            for part in content:
+                if not isinstance(part, dict):
+                    raise CourseLLMError("photo messages need text or image_url content parts.")
+                if part.get("type") == "text" and isinstance(part.get("text"), str) and part["text"].strip():
+                    parts.append({"type": "text", "text": part["text"]})
+                elif part.get("type") == "image_url" and isinstance(part.get("image_url"), dict):
+                    image = part["image_url"]
+                    url = image.get("url")
+                    detail = image.get("detail", "high")
+                    if (not isinstance(url, str) or not url.startswith(("https://", "data:image/png;base64,", "data:image/jpeg;base64,", "data:image/webp;base64,", "data:image/gif;base64,"))
+                            or not isinstance(detail, str) or detail not in {"auto", "low", "high", "original"}):
+                        raise CourseLLMError("photo inputs need an HTTPS image URL or inline image and a valid detail level.")
+                    parts.append({"type": "image_url", "image_url": {"url": url, "detail": detail}})
+                else:
+                    raise CourseLLMError("photo messages support text and image_url parts only.")
+            content = parts
+        elif not isinstance(content, str) or not content.strip():
+            raise CourseLLMError("each message must contain non-empty text or a user photo message.")
         validated.append({"role": role, "content": content})
     return validated
 
@@ -161,3 +182,23 @@ def ask(prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> str:
     if not isinstance(prompt, str) or not prompt.strip():
         raise CourseLLMError("prompt must be non-empty text.")
     return chat([{"role": "user", "content": prompt}], max_tokens=max_tokens)
+
+
+def ask_image(prompt: str, image: bytes, *, mime_type: str = "image/jpeg",
+              max_tokens: int = DEFAULT_MAX_TOKENS) -> str:
+    """Ask the assigned course vision model about an uploaded photo.
+
+    Call server-side with upload bytes; no public hosting or personal key is
+    needed. This uses the course app model, not Newcastle image generation.
+    """
+    if not isinstance(prompt, str) or not prompt.strip():
+        raise CourseLLMError("prompt must be non-empty text.")
+    if not isinstance(image, bytes) or not 0 < len(image) <= 8 * 1024 * 1024:
+        raise CourseLLMError("photo must contain between 1 byte and 8 MB.")
+    if mime_type not in {"image/png", "image/jpeg", "image/webp", "image/gif"}:
+        raise CourseLLMError("photo must be PNG, JPEG, WebP or a non-animated GIF.")
+    data_url = f"data:{mime_type};base64," + base64.b64encode(image).decode("ascii")
+    return chat([{"role": "user", "content": [
+        {"type": "text", "text": prompt},
+        {"type": "image_url", "image_url": {"url": data_url, "detail": "high"}},
+    ]}], max_tokens=max_tokens)

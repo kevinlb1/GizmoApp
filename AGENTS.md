@@ -47,12 +47,12 @@ chrome and demos unless requested.
   Use procedural primitives for intentionally simple/stylized work or as a
   clearly described placeholder. See `docs/agent-extension-guide.md` for the
   detailed graphics and visual-verification path.
-- AI features: use `ask()` or `chat()` from
+- AI features: use `ask()`, `chat()`, or `ask_image()` for photo understanding from
   `server/gizmoapp_server/llm.py`. The platform supplies the app's separate
   model credentials; never hard-code keys or reuse the coding agent's key.
   Call the model only in response to user actions and surface helper errors.
-  Reasoning defaults off to avoid exhausting `max_tokens` before an answer.
-  Enable only when needed and increase the token budget accordingly; see README.
+  Reasoning defaults off; enable only with sufficient tokens (README).
+  Photos: see `docs/course-vision.md`; do not assume the model is text-only.
 - Media: call `server/gizmoapp_server/media.py` directly from Python during the
   coding turn to create requested assets. Use the inherited turn credential;
   no Flask server, browser click, or native tool is needed. Follow

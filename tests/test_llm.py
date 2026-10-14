@@ -9,6 +9,30 @@ from server.gizmoapp_server import llm
 
 
 class CourseLLMTests(unittest.TestCase):
+    def test_uploaded_photo_reaches_assigned_course_model(self):
+        client = Mock()
+        client.chat.completions.create.return_value = SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content='A tree'))])
+        environment = {'GIZMO_LLM_API_KEY': 'app-key', 'GIZMO_LLM_BASE_URL': 'https://gateway.example/v1',
+                       'GIZMO_LLM_MODEL': 'qwen3.6-35b-a3b'}
+        with patch.dict(os.environ, environment, clear=True), patch.object(llm, 'OpenAI', Mock(return_value=client)):
+            self.assertEqual(llm.ask_image('Describe this', b'photo', mime_type='image/png'), 'A tree')
+        args = client.chat.completions.create.call_args.kwargs
+        self.assertEqual(args['model'], 'qwen3.6-35b-a3b')
+        self.assertEqual(args['messages'][0]['content'][1],
+                         {'type': 'image_url', 'image_url': {'url': 'data:image/png;base64,cGhvdG8=', 'detail': 'high'}})
+
+    def test_photo_input_validation_does_not_contact_gateway(self):
+        with patch.object(llm, '_get_client') as gateway:
+            for image, mime in ((b'', 'image/png'), ('photo', 'image/png'), (b'photo', 'text/html'),
+                                (b'x' * (8 * 1024 * 1024 + 1), 'image/jpeg')):
+                with self.subTest(mime=mime), self.assertRaises(llm.CourseLLMError):
+                    llm.ask_image('Describe this', image, mime_type=mime)
+            for content in ([], [{'type': 'input_audio'}], [{'type': 'image_url', 'image_url': {'url': 'file:///private'}}]):
+                with self.assertRaises(llm.CourseLLMError):
+                    llm.chat([{'role': 'user', 'content': content}])
+            gateway.assert_not_called()
+
     def setUp(self):
         llm._client = None
         llm._client_signature = None
