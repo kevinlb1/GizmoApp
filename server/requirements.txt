@@ -1,3 +1,5 @@
+# Pin the bootstrap installer in local venvs and the offline notebook wheelhouse.
+pip==26.2.1
 # Direct runtime dependencies are pinned so installs are reproducible.
 # Review and validate upgrades deliberately before changing these versions.
 Flask==3.1.3

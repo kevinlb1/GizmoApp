@@ -2,8 +2,7 @@
 
 ## Purpose
 
-GizmoApp is CodingWorkspace's blank Flask/SQLite starter. Read this file and
-`docs/agent-map.md`, then only task-relevant files and guidance.
+GizmoApp is CodingWorkspace's blank Flask/SQLite starter. Read `docs/agent-map.md`, then task-relevant guidance.
 
 ## Student Build Loop
 
@@ -63,13 +62,10 @@ chrome and demos unless requested.
   module, add its slug to tracked `deploy/features.txt`, and read only its
   section in `docs/agent-extension-guide.md`. Optional routes are off until
   that tracked intent enables them.
-- New Python dependency: declare each required runtime package directly in
-  `server/requirements.txt` with a tested version pin. For a derived app that
-  needs ML, this includes `scikit-learn` (imported as `sklearn`). Hosted rebuilds
-  install that file; a one-off `make install-ml` or `pip install` does not
-  persist the dependency across image upgrades. Keep ML out of the canonical
-  blank starter's base requirements; `server/requirements-ml.txt` remains an
-  optional local experiment. Keep optional imports lazy and validate the change.
+- Dependencies: pin required packages in `server/requirements.txt`; one-off
+  installs do not persist across image upgrades. ML apps must declare
+  `scikit-learn` (`sklearn`); exclude it from the blank starter. Keep imports
+  lazy and validate changes.
 
 ## Validation And Safety
 
