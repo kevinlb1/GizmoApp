@@ -113,15 +113,17 @@ const {generateMedia, narrate} = await import(
 // Run inside a click/submit handler; disable the button until it finishes.
 const image = await generateMedia(config.apiBase, "image", {
   prompt: "A friendly robot teaching an AI class"
-}, {onProgress: status => { statusElement.textContent = status; }});
+}, {onProgress: (status, progress = {}) => {
+  statusElement.textContent = progress.statusMessage || status;
+}});
 imageElement.src = URL.createObjectURL(image);
 
 // Each chunk becomes playable as soon as it is ready. Your callback should
 // enqueue a chunk in the audio player, not wait for the entire narration.
 await narrate(config.apiBase, narrationText, {
   voice: "af_heart",
-  onProgress: ({status, index, total}) => {
-    statusElement.textContent = `${status}: ${index + 1} / ${total}`;
+  onProgress: ({status, statusMessage, index, total}) => {
+    statusElement.textContent = `${statusMessage || status}: ${index + 1} / ${total}`;
   },
   onChunk: blob => audioQueue.push(URL.createObjectURL(blob)),
 });
@@ -140,6 +142,9 @@ retries a submission after an ambiguous response. Narration is bounded to
 16,000 characters, split at whitespace into chunks of at most 500 characters,
 with only one generation outstanding. Pass an AbortSignal to stop further
 polling/chunks; an already submitted job may finish, but no new job is created.
+Updated CW services report `queueAgeSeconds`, `waitingForWorker` and a safe
+`statusMessage` while queued. Display that message to distinguish worker startup
+from generation. Older services still return the ordinary status string.
 Receipts expire after 15 minutes or a CW process restart. App restart/token
 rotation invalidates access. A lost receipt is not recovered by resubmitting.
 

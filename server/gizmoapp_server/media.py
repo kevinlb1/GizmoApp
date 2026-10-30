@@ -42,6 +42,19 @@ class PendingMedia:
     """Opaque progress receipt; never contains the media API credential."""
     poll_ticket: str
     status: str
+    queue_age_seconds: int | None = None
+    matching_fresh_workers: int | None = None
+
+    @property
+    def progress(self) -> dict[str, Any]:
+        if self.queue_age_seconds is None or self.matching_fresh_workers is None:
+            return {}
+        waiting = self.matching_fresh_workers == 0
+        return {"queueAgeSeconds": self.queue_age_seconds,
+                "matchingFreshWorkers": self.matching_fresh_workers,
+                "waitingForWorker": waiting,
+                "statusMessage": ("Waiting for a media worker" if waiting else
+                                  "Queued for a media worker") + f" ({self.queue_age_seconds}s in queue)."}
 
 
 @dataclass(frozen=True)
@@ -365,7 +378,12 @@ def _decode_result(status, content_type, body, *, allow_pending=True, expected=N
         ticket = result.get("pollTicket")
         if not isinstance(ticket, str) or not 1 <= len(ticket) <= 2048:
             raise CourseMediaError("This CW version does not support media polling. Update CW and try again.")
-        return PendingMedia(ticket, str(result.get("status", "queued")))
+        state = str(result.get("status", "queued"))
+        age, workers = result.get("queueAgeSeconds"), result.get("matchingFreshWorkers")
+        if (state != "queued" or type(age) is not int or age < 0
+                or type(workers) is not int or not 0 <= workers <= 100_000):
+            age, workers = None, None
+        return PendingMedia(ticket, state, age, workers)
     if expected == "image" and content_type != "application/json":
         raise CourseMediaError("The course-media service returned an invalid image.")
     if expected == "audio" and content_type == "application/json":

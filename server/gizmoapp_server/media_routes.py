@@ -31,7 +31,7 @@ def register_media_routes(app):
         except CourseMediaError as exc:
             return jsonify(errors=[str(exc)]), exc.status
         if isinstance(result, PendingMedia):
-            response = jsonify(pollTicket=result.poll_ticket, status=result.status)
+            response = jsonify(pollTicket=result.poll_ticket, status=result.status, **result.progress)
             response.status_code = 202
             response.headers["Retry-After"] = "2"
         else:

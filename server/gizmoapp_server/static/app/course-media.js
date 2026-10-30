@@ -32,7 +32,9 @@ export async function generateMedia(apiBase, operation, payload, {signal, onProg
           if (typeof progress.pollTicket !== "string") throw new Error("Invalid media progress response");
           body = {pollTicket: progress.pollTicket};
           path = "poll";
-          onProgress(progress.status);
+          // Keep the first argument compatible with existing status callbacks.
+          // New callers can display the safe message and elapsed queue time.
+          onProgress(progress.status, progress);
         } else if (response.ok) {
           return await response.blob();
         } else {
@@ -72,7 +74,7 @@ export async function narrate(apiBase, text, {onChunk, onProgress = () => {}, si
   }
   for (let index = 0; index < chunks.length; index++) {
     const blob = await generateMedia(apiBase, "speech", {text: chunks[index], ...voiceOptions}, {
-      signal, onProgress: status => onProgress({status, index, total: chunks.length}),
+      signal, onProgress: (status, progress = {}) => onProgress({...progress, status, index, total: chunks.length}),
     });
     // Callback enqueues playback immediately, while the next chunk starts generating.
     await onChunk(blob, index, chunks.length);

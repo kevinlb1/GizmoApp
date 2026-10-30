@@ -49,6 +49,22 @@ class PollingTests(unittest.TestCase):
                 response = app.test_client().post('/api/course-media/poll', json={'pollTicket': 'ticket'})
             self.assertEqual(status, response.status_code)
 
+    def test_queue_progress_survives_helper_and_prefix_route_without_upstream_text(self):
+        payload = {'pollTicket': 'ticket', 'status': 'queued', 'queueAgeSeconds': 142,
+                   'matchingFreshWorkers': 0, 'statusMessage': 'unsafe upstream detail'}
+        pending = media._decode_result(202, 'application/json', json.dumps(payload).encode())
+        app = Flask(__name__); app.config['URL_PREFIX'] = '/preview/one'
+        register_media_routes(app)
+        with patch('server.gizmoapp_server.media_routes.poll_media', return_value=pending):
+            response = app.test_client().post('/preview/one/api/course-media/poll', json={'pollTicket': 'ticket'})
+        self.assertEqual(response.json['queueAgeSeconds'], 142)
+        self.assertTrue(response.json['waitingForWorker'])
+        self.assertEqual(response.json['statusMessage'], 'Waiting for a media worker (142s in queue).')
+        self.assertNotIn('unsafe', str(response.json))
+        for changes in ({'queueAgeSeconds': True}, {'matchingFreshWorkers': -1}, {'status': 'running'}):
+            invalid = media._decode_result(202, 'application/json', json.dumps({**payload, **changes}).encode())
+            self.assertEqual(invalid.progress, {})
+
     def test_malformed_browser_values_fail_without_contacting_gateway(self):
         app = Flask(__name__); app.config['URL_PREFIX'] = ''
         register_media_routes(app)
